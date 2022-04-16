@@ -3,4 +3,4 @@
 /* eslint-disable indent */
 
 export * from "./types"
-export { default } from "./core"
+export * from "./core"

@@ -12,7 +12,11 @@
 		"type": "git",
 		"url": "git+https://github.com/agyemanjp/http.js.git"
 	},
-	"keywords": [],
+	"keywords": [
+		"HTTP",
+		"Request",
+		"Proxy"
+	],
 	"author": "",
 	"license": "MIT",
 	"bugs": {
