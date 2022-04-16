@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 // import { Obj } from "@agyemanjp/standard"
 
 /** MIME content types */
@@ -330,6 +331,64 @@ export const statusCodes = Object.freeze({
 
 /** HTTP methods */
 export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT"
+
+
+export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
+	url: string;
+	accept?: MIMETypeKey;
+	headers?: sObj;
+}
+export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	query?: Q;
+	params?: P;
+}
+export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	query?: Q;
+	params?: P;
+}
+export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	// query?: Q;
+	params?: P;
+	body: B;
+}
+export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	// query?: Q;
+	params?: P;
+	body: B;
+}
+export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
+	params?: P,
+	body: B
+}
+
+export type RequestArgs = RequestGET | RequestDELETE | RequestPOST | RequestPUT | RequestPATCH
+
+export type TResponse<A extends keyof typeof MIME_TYPES | undefined> = (
+	A extends "Json" ? Json :
+	A extends "Text" ? string :
+	A extends "Octet" ? Blob :
+	A extends "Binary" ? ArrayBuffer :
+	ReadableStream<Uint8Array> | null
+)
+
+export type ExtractRouteParams<T extends string> = (
+	string extends T
+	? Record<string, string>
+	: T extends `${infer Start}:${infer Param}/${infer Rest}`
+	? { [k in Param | keyof ExtractRouteParams<Rest>]: string }
+	: T extends `${infer Start}:${infer Param}`
+	? { [k in Param]: string }
+	: {}
+)
+
+export type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
+
+export interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
+export type JsonArray = Array<JsonValue>
+export type JsonValue = null | string | number | boolean | Date | Json | JsonArray
+type sObj = Json<string>
+
+export type MIMETypeKey = keyof typeof MIME_TYPES
 
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>

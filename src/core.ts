@@ -3,43 +3,15 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import { Obj, pick, keys, trimRight } from "@agyemanjp/standard"
-import { Method, MIME_TYPES } from "./types"
+import { Obj, trimRight } from "@agyemanjp/standard"
+import {
+	BodyType, Json, Method,
+	RequestArgs, RequestPUT, RequestPOST, RequestPATCH,
+	MIMETypeKey, MIME_TYPES, RequestDELETE, RequestGET, TResponse
+} from "./types"
 
 
-export const proxy = {
-	get: {
-		route: <Route extends string>(url: Route) => ({
-			queryType: <Query extends sObj>() => ({
-				returnType: <Res extends Json>() =>
-					async (args: Query & ExtractRouteParams<Route>) =>
-						get<Res>({ url, ...parseGetArgs(url, args), accept: "Json" }),
-				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Query & ExtractRouteParams<Route>) =>
-						get({ url, ...parseGetArgs(url, args), accept })
-			})
-		})
-	},
-	post: {
-		route: <Route extends string>(url: Route) => ({
-			bodyType: <Body extends BodyType>() => ({
-				returnType: <Res extends Json>() =>
-					async (args: Body & ExtractRouteParams<Route>) =>
-						post<Body, Res>({ url, ...parsePostArgs(url, args), accept: "Json" }),
-				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Body & ExtractRouteParams<Route>) =>
-						post({ url, ...parsePostArgs(url, args), accept })
-			})
-		})
-	}
-}
-
-// const proxyGet = proxy.get.route("/projects/:api").queryType<{ category: string }>().responseType("Text")
-// const g = proxyGet({ category: "cat", api: "nxthaus" })
-
-// const proxyPost = proxy.post.route("/projects/:api").bodyType<{ category: string }>().returnType<{ x: number }>()
-// const p = proxyPost({ category: "cat", api: "nxthaus" })
-
+export const request = { get, put, post, patch, delete: del }
 
 export function post<In extends BodyType = BodyType, A extends MIMETypeKey = MIMETypeKey>(args: RequestPOST<In> & { accept: A }): Promise<TResponse<A>>
 export function post<In extends BodyType = BodyType, Out extends Json = Json>(args: RequestPOST<In> & { accept: "Json" }): Promise<Out>
@@ -72,8 +44,6 @@ export function get(args: RequestGET) {
 	return __("GET", args) as any
 }
 // const got = get<{ arr: Array<number> }>({ url: "/foo/:app/bar", params: { x: "" }, accept: "Json" })
-
-export default { get, put, post, patch, delete: del, getQueryString, proxy }
 
 
 async function __<R extends RequestArgs = RequestArgs>(method: Method, args: R): Promise<TResponse<R["accept"]>> {
@@ -121,6 +91,7 @@ async function __<R extends RequestArgs = RequestArgs>(method: Method, args: R):
 		method,
 		body,
 		headers: {
+			...args.headers,
 			...args.accept ? { 'Accept': MIME_TYPES[args.accept] } : {},
 			...contentType ? { 'ContentType': MIME_TYPES[contentType] } : {}
 		},
@@ -153,83 +124,9 @@ function getQueryString<T extends Obj<string> = Obj<string>>(obj?: T, excludedVa
 		.join("&")
 }
 
-function parseGetArgs<Route extends string, Query extends sObj>(url: Route, args: Query & ExtractRouteParams<Route>) {
-	return {
-		query: pick(args, ...keys(args).filter(k => !url.includes(`/:${k}/`))) as any as Query,
-		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as ExtractRouteParams<Route>
-	}
-}
-function parsePostArgs<Route extends string, Body extends BodyType>(url: Route, args: Body & ExtractRouteParams<Route>) {
-	return {
-		body: pick(args, ...keys(args).filter(k => !url.includes(`/:${k}/`))) as any as Body,
-		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as ExtractRouteParams<Route>
-	}
-}
 
-type RequestBase = /*Omit<RequestInit, "method"> &*/ {
-	url: string;
-	accept?: MIMETypeKey;
-	// customFetch?: typeof fetch;
-}
-type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// method: "GET";
-	query?: Q;
-	params?: P;
-}
-type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// method: "DELETE";
-	query?: Q;
-	params?: P;
-}
-type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// method: "PUT";
-	query?: Q;
-	params?: P;
-	body: B;
-	// contentType: keyof typeof MIME_TYPES;
-}
-type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// method: "PATCH";
-	query?: Q;
-	params?: P;
-	body: B;
-	// contentType: keyof typeof MIME_TYPES;
-}
-type RequestPOST<B extends BodyType = BodyType> = RequestBase & {
-	// method: "POST";
-	body: B
-	// contentType: "Json",
-	// params?: Record<string, string>,
-	// query?: Record<string, string>,
-}
+type sObj = Json<string>
 
-type RequestArgs = RequestGET | RequestDELETE | RequestPOST | RequestPUT | RequestPATCH
-
-type TResponse<A extends keyof typeof MIME_TYPES | undefined> = (
-	A extends "Json" ? Json :
-	A extends "Text" ? string :
-	A extends "Octet" ? Blob :
-	A extends "Binary" ? ArrayBuffer :
-	ReadableStream<Uint8Array> | null
-)
-
-type ExtractRouteParams<T extends string> = (
-	string extends T
-	? Record<string, string>
-	: T extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof ExtractRouteParams<Rest>]: string }
-	: T extends `${infer Start}:${infer Param}`
-	? { [k in Param]: string }
-	: {}
-)
 
 // type ResponseType<R extends RequestBase> = Promise<TResponse<R["accept"]>>
 
-type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
-
-interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
-type JsonArray = Array<JsonValue>
-type JsonValue = null | string | number | boolean | Date | Json | JsonArray
-type sObj = Json<string>
-
-type MIMETypeKey = keyof typeof MIME_TYPES
