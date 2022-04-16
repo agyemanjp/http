@@ -229,7 +229,7 @@ type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBuffe
 
 interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
 type JsonArray = Array<JsonValue>
-type JsonValue = string | number | boolean | Date | Json | JsonArray
+type JsonValue = null | string | number | boolean | Date | Json | JsonArray
 type sObj = Json<string>
 
 type MIMETypeKey = keyof typeof MIME_TYPES
