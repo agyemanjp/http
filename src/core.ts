@@ -3,7 +3,7 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import { Obj, trimRight } from "@agyemanjp/standard"
+import { Obj, trimRight, omit } from "@agyemanjp/standard"
 import {
 	BodyType, Json, Method,
 	RequestArgs, RequestPUT, RequestPOST, RequestPATCH,
@@ -11,42 +11,51 @@ import {
 } from "./types"
 
 
-export const request = { get, put, post, patch, delete: del }
+export const request = { any: req, get, put, post, patch, delete: del }
 
-export function post<In extends BodyType = BodyType, A extends MIMETypeKey = MIMETypeKey>(args: RequestPOST<In> & { accept: A }): Promise<TResponse<A>>
-export function post<In extends BodyType = BodyType, Out extends Json = Json>(args: RequestPOST<In> & { accept: "Json" }): Promise<Out>
-export function post(args: RequestPOST) {
-	return __("POST", args) as any
+type Specific<R extends RequestArgs = RequestArgs, A extends MIMETypeKey = MIMETypeKey> = Omit<R, "method"> & { accept: A }
+
+
+export function post<A extends MIMETypeKey = MIMETypeKey>(args: Specific<RequestPOST, A>): Promise<TResponse<A>>
+export function post<Out extends Json = Json>(args: Specific<RequestPOST, "Json">): Promise<Out>
+export function post(args: Specific<RequestPOST>) {
+	return __({ ...args, method: "POST" }) as any
 }
-// const x = put({ url: "", body: { a: "" }, accept: "Octet" }).then(y => y)
+const p = post<{ arr: any[] }>({ url: "", body: { a: "" }, accept: "Json" }).then(y => y)
 
-export function put<In extends BodyType = BodyType, A extends MIMETypeKey = MIMETypeKey>(args: RequestPUT<In> & { accept: A }): Promise<TResponse<A>>
-export function put<In extends BodyType = BodyType, Out extends Json = Json>(args: RequestPUT<In> & { accept: "Json" }): Promise<Out>
-export function put(args: RequestPUT) {
-	return __("PUT", args) as any
-}
-
-export function patch<In extends BodyType = BodyType, A extends MIMETypeKey = MIMETypeKey>(args: RequestPATCH<In> & { accept: A }): Promise<TResponse<A>>
-export function patch<In extends BodyType = BodyType, Out extends Json = Json>(args: RequestPATCH<In> & { accept: "Json" }): Promise<Out>
-export function patch(args: RequestPATCH) {
-	return __("PATCH", args) as any
+export function put<A extends MIMETypeKey = MIMETypeKey>(args: Specific<RequestPUT, A>): Promise<TResponse<A>>
+export function put<Out extends Json = Json>(args: Specific<RequestPUT, "Json">): Promise<Out>
+export function put(args: Specific<RequestPUT>) {
+	return __({ ...args, method: "PUT" }) as any
 }
 
-export function del<A extends MIMETypeKey = MIMETypeKey>(args: RequestDELETE & { accept: A }): Promise<TResponse<A>>
-export function del<Out extends Json = Json>(args: RequestDELETE & { accept: "Json" }): Promise<Out>
-export function del(args: RequestDELETE) {
-	return __("DELETE", args) as any
+export function patch<A extends MIMETypeKey = MIMETypeKey>(args: Specific<RequestPATCH, A>): Promise<TResponse<A>>
+export function patch<Out extends Json = Json>(args: Specific<RequestPATCH, "Json">): Promise<Out>
+export function patch(args: Specific<RequestPATCH>) {
+	return __({ ...args, method: "PATCH" }) as any
 }
 
-export function get<A extends MIMETypeKey = MIMETypeKey>(args: RequestGET & { accept: A }): Promise<TResponse<A>>
-export function get<Out extends Json = Json>(args: RequestGET & { accept: "Json" }): Promise<Out>
-export function get(args: RequestGET) {
-	return __("GET", args) as any
+export function del<A extends MIMETypeKey = MIMETypeKey>(args: Specific<RequestDELETE, A>): Promise<TResponse<A>>
+export function del<Out extends Json = Json>(args: Specific<RequestDELETE, "Json">): Promise<Out>
+export function del(args: Specific<RequestDELETE>) {
+	return __({ ...args, method: "DELETE" }) as any
+}
+
+export function get<A extends MIMETypeKey = MIMETypeKey>(args: Specific<RequestGET, A>): Promise<TResponse<A>>
+export function get<Out extends Json = Json>(args: Specific<RequestGET, "Json">): Promise<Out>
+export function get(args: Specific<RequestGET>) {
+	return __({ ...args, method: "GET" }) as any
 }
 // const got = get<{ arr: Array<number> }>({ url: "/foo/:app/bar", params: { x: "" }, accept: "Json" })
 
+export function req<A extends MIMETypeKey = MIMETypeKey>(args: RequestArgs & { accept: A }): Promise<TResponse<A>>
+export function req<Out extends Json = Json>(args: RequestArgs & { accept: "Json" }): Promise<Out>
+export function req(args: RequestArgs) {
+	return __(args) as any
+}
+// const r = req({ url: "", body: {}, accept: "Json", method: "POST" })
 
-async function __<R extends RequestArgs = RequestArgs>(method: Method, args: R): Promise<TResponse<R["accept"]>> {
+async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TResponse<R["accept"]>> {
 	const queryParams = "query" in args ? `?${getQueryString(args.query)}` : ""
 
 	const urlEffective = `${trimRight(args.url, "/")}${queryParams}`
@@ -88,7 +97,7 @@ async function __<R extends RequestArgs = RequestArgs>(method: Method, args: R):
 	)
 
 	return fetch(urlEffective, {
-		method,
+		method: args.method,
 		body,
 		headers: {
 			...args.headers,

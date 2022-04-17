@@ -330,8 +330,10 @@ export const statusCodes = Object.freeze({
 })
 
 /** HTTP methods */
-export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT"
-
+export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT";
+export type IdempotentMethods = "GET" | "DELETE" | "PATCH" | "PUT";
+export type BodyMethods = "POST" | "PATCH" | "PUT";
+export type QueryMethods = "GET" | "DELETE";
 
 export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
 	url: string;
@@ -339,29 +341,34 @@ export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
 	headers?: sObj;
 }
 export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	method: "GET";
 	query?: Q;
 	params?: P;
 }
 export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	method: "DELETE";
 	query?: Q;
 	params?: P;
 }
 export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// query?: Q;
+	method: "PUT";
 	params?: P;
 	body: B;
 }
 export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	// query?: Q;
+	method: "PATCH";
 	params?: P;
 	body: B;
 }
 export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
+	method: "POST";
 	params?: P,
 	body: B
 }
 
-export type RequestArgs = RequestGET | RequestDELETE | RequestPOST | RequestPUT | RequestPATCH
+export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = (
+	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P, Q> | RequestPATCH<B, P, Q>
+)
 
 export type TResponse<A extends keyof typeof MIME_TYPES | undefined> = (
 	A extends "Json" ? Json :

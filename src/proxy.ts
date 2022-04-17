@@ -39,7 +39,7 @@ function bodyRoute(method: "post" | "put" | "patch") {
 			bodyType: <Body extends BodyType>() => ({
 				returnType: <Res extends Json>() =>
 					async (args: Body & ExtractRouteParams<Route>) =>
-						request[method]<Body, Res>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+						request[method]<Res>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
 					async (args: Body & ExtractRouteParams<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "body"), accept })
