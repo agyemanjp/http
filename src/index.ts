@@ -3,5 +3,6 @@
 /* eslint-disable indent */
 
 export * from "./types"
-export * from "./core"
 export * from "./proxy"
+export * from "./client"
+export * from "./server"

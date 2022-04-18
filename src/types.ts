@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-// import { Obj } from "@agyemanjp/standard"
+import { TypeAssert, Concat } from "@agyemanjp/standard"
 
 /** MIME content types */
 export const MIME_TYPES = Object.freeze({
@@ -379,6 +379,8 @@ export type ExtractRouteParams<T extends string> = (
 	? { [k in Param]: string }
 	: {}
 )
+// eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
+const test_extract_route_params: TypeAssert<ExtractRouteParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
 
 export type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
@@ -388,7 +390,8 @@ export type JsonValue = null | string | number | boolean | Date | Json | JsonArr
 type sObj = Json<string>
 
 
-
+export type BodyProxy<Body extends Json, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Promise<Ret>
+export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
 
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>

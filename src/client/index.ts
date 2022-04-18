@@ -5,11 +5,10 @@
 import { fetch } from "cross-fetch"
 import { Obj, trimRight } from "@agyemanjp/standard"
 import {
-	BodyType, Json,
-	Method, BodyMethod, QueryMethod,
+	Json,
 	RequestArgs, RequestPUT, RequestPOST, RequestPATCH, RequestDELETE, RequestGET,
-	MIME_TYPES, MIMETypeString
-} from "./types"
+	MIME_TYPES
+} from "../types"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 

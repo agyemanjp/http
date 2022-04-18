@@ -1,16 +1,18 @@
 import { pick, keys } from "@agyemanjp/standard/object"
-import { ExtractRouteParams, Json, BodyType, MIME_TYPES } from "./types"
-import { request } from "./core"
+import { ExtractRouteParams, Json, BodyType, MIME_TYPES } from "../types"
+import { request } from "../client"
 
+/** Fluent proxy factory */
 export const proxy = {
-	get: queryRoute("get"),
-	delete: queryRoute("delete"),
-	post: bodyRoute("post"),
-	patch: bodyRoute("patch"),
-	put: bodyRoute("put"),
+	get: queryProxy("get"),
+	delete: queryProxy("delete"),
+	post: bodyProxy("post"),
+	patch: bodyProxy("patch"),
+	put: bodyProxy("put"),
 }
 
-function queryRoute(method: "get" | "delete") {
+/** Fluent query-based proxy factory */
+export function queryProxy(method: "get" | "delete") {
 	return {
 		route: <Route extends string>(url: Route) => ({
 			queryType: <Query extends Json<string>>() => ({
@@ -32,8 +34,8 @@ function queryRoute(method: "get" | "delete") {
 		})
 	}
 }
-
-function bodyRoute(method: "post" | "put" | "patch") {
+/** Fluent body-based proxy factory */
+export function bodyProxy(method: "post" | "put" | "patch") {
 	return {
 		route: <Route extends string>(url: Route) => ({
 			bodyType: <Body extends BodyType>() => ({
