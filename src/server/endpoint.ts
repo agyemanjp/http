@@ -8,15 +8,15 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, BodyProxy, QueryPro
 
 /** Fluent endpoint factory */
 export const endpoint = {
-	get: queryEndpoint("get"),
-	delete: queryEndpoint("delete"),
-	post: bodyEndpoint("post"),
-	patch: bodyEndpoint("patch"),
-	put: bodyEndpoint("put"),
+	get: queryEndpoint("GET"),
+	delete: queryEndpoint("DELETE"),
+	post: bodyEndpoint("POST"),
+	patch: bodyEndpoint("PATCH"),
+	put: bodyEndpoint("PUT"),
 }
 
 /** Fluent body-based route factory */
-export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
+export function bodyEndpoint<M extends BodyMethod>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
@@ -36,7 +36,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
 	}
 }
 /** Fluent query-based route factory */
-export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
+export function queryEndpoint<M extends QueryMethod>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
