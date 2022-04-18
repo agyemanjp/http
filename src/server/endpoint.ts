@@ -4,7 +4,7 @@ import * as express from 'express'
 import { Concat, Obj } from '@agyemanjp/standard/utility'
 
 import { proxy } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, BodyProxy, QueryProxy, Wrap } from "../types"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, BodyProxy, QueryProxy, Wrap, JsonArray } from "../types"
 
 /** Fluent endpoint factory */
 export const endpoint = {
@@ -20,7 +20,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
-				returnType: <Ret extends Json | null>() => ({
+				returnType: <Ret extends Json | JsonArray | null>() => ({
 					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
@@ -40,7 +40,7 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
-				returnType: <Ret extends Json | null>() => ({
+				returnType: <Ret extends Json | JsonArray | null>() => ({
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
@@ -53,7 +53,7 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 				})
 			}),
 			headersType: <Headers extends Json<string>>() => ({
-				returnType: <Ret extends Json | null>() => ({
+				returnType: <Ret extends Json | JsonArray | null>() => ({
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Headers, Url, Promise<Ret>>) => ({
 						method,
 						route: url,

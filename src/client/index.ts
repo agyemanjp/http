@@ -7,7 +7,8 @@ import { Obj, trimRight } from "@agyemanjp/standard"
 import {
 	Json,
 	RequestArgs, RequestPUT, RequestPOST, RequestPATCH, RequestDELETE, RequestGET,
-	MIME_TYPES
+	MIME_TYPES,
+	JsonArray
 } from "../types"
 
 export const request = { any: any, get, put, post, patch, delete: del }
@@ -135,7 +136,7 @@ type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = Accept
 type AcceptType = keyof typeof MIME_TYPES
 
 type TResponse<A extends AcceptType | undefined> = (
-	A extends "Json" ? Json :
+	A extends "Json" ? Json | JsonArray :
 	// A extends "JsonWrapped" ? Wrapped<Json> :
 	A extends "Text" ? string :
 	A extends "Octet" ? Blob :

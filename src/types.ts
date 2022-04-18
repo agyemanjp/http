@@ -350,12 +350,12 @@ export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = Reques
 	query?: Q;
 	params?: P;
 }
-export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
 	method: "PUT";
 	params?: P;
 	body: B;
 }
-export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
 	method: "PATCH";
 	params?: P;
 	body: B;
@@ -367,7 +367,7 @@ export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = 
 }
 
 export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = (
-	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P, Q> | RequestPATCH<B, P, Q>
+	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P> | RequestPATCH<B, P>
 )
 
 export type ExtractRouteParams<T extends string> = (
@@ -382,7 +382,7 @@ export type ExtractRouteParams<T extends string> = (
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
 const test_extract_route_params: TypeAssert<ExtractRouteParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
 
-export type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
+export type BodyType = Json | JsonArray | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
 export interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
 export type JsonArray = Array<JsonValue>
@@ -390,7 +390,7 @@ export type JsonValue = null | string | number | boolean | Date | Json | JsonArr
 type sObj = Json<string>
 
 
-export type BodyProxy<Body extends Json, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Ret
+export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Ret
 export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Ret
 // export type HeadersProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
 
