@@ -1,6 +1,6 @@
 {
 	"name": "@agyemanjp/http",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Http library based on request API",
 	"main": "index.js",
 	"types": "index.d.ts",
