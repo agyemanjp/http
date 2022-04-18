@@ -331,13 +331,13 @@ export const statusCodes = Object.freeze({
 
 /** HTTP methods */
 export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT";
-export type IdempotentMethods = "GET" | "DELETE" | "PATCH" | "PUT";
-export type BodyMethods = "POST" | "PATCH" | "PUT";
-export type QueryMethods = "GET" | "DELETE";
+export type IdempotentMethod = "GET" | "DELETE" | "PATCH" | "PUT";
+export type BodyMethod = "POST" | "PATCH" | "PUT";
+export type QueryMethod = "GET" | "DELETE";
 
 export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
 	url: string;
-	accept?: MIMETypeKey;
+	accept?: keyof typeof MIME_TYPES;
 	headers?: sObj;
 }
 export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
@@ -370,14 +370,6 @@ export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q 
 	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P, Q> | RequestPATCH<B, P, Q>
 )
 
-export type TResponse<A extends keyof typeof MIME_TYPES | undefined> = (
-	A extends "Json" ? Json :
-	A extends "Text" ? string :
-	A extends "Octet" ? Blob :
-	A extends "Binary" ? ArrayBuffer :
-	ReadableStream<Uint8Array> | null
-)
-
 export type ExtractRouteParams<T extends string> = (
 	string extends T
 	? Record<string, string>
@@ -395,7 +387,8 @@ export type JsonArray = Array<JsonValue>
 export type JsonValue = null | string | number | boolean | Date | Json | JsonArray
 type sObj = Json<string>
 
-export type MIMETypeKey = keyof typeof MIME_TYPES
+
+
 
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>
