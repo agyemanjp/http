@@ -392,7 +392,9 @@ type sObj = Json<string>
 
 export type BodyProxy<Body extends Json, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Promise<Ret>
 export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
+// export type HeadersProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
 
+export type Wrap<T> = ({ data: T } | { error: string })
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>
 // export interface Json { [x: string]: string | number | boolean | Date | Json | JsonArray }

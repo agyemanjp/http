@@ -4,7 +4,7 @@ import * as express from 'express'
 import { Concat, Obj } from '@agyemanjp/standard/utility'
 
 import { proxy } from "../proxy"
-import { BodyMethod, Json, ExtractRouteParams, QueryMethod, statusCodes, Method, BodyProxy, QueryProxy } from "../types"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, BodyProxy, QueryProxy, Wrap } from "../types"
 
 /** Fluent endpoint factory */
 export const endpoint = {
@@ -20,20 +20,16 @@ export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
-				returnType: <Ret extends Json>() => ({
-					handler: <H>(handlerFactory: (args: H) => (args: Body & ExtractRouteParams<Url>) => Promise<Ret>) => [
+				returnType: <Ret extends Json | null>() => ({
+					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Wrap<Ret>>>) => ({
 						method,
-						url,
-
-						// handler factory
-						(args: H) => jsonEndpoint(handlerFactory(args)),
-
-						// proxy factory
-						<BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<BodyMethod>]
-							.route(`${baseUrl}${url}` as Concat<BaseUrl, Url>)
+						route: url,
+						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args)),
+						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<BodyMethod>]
+							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
 							.bodyType<Body>()
-							.returnType<Ret>() as BodyProxy<Body, Concat<BaseUrl, Url>, Ret>
-					] as const
+							.returnType<Wrap<Ret>>() //as BodyProxy<Body, Concat<BaseUrl, Url>, Ret>
+					})
 				})
 			})
 		})
@@ -44,20 +40,29 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
-				returnType: <Ret extends Json>() => ({
-					handler: <H>(handlerFactory: (args: H) => (args: Query & ExtractRouteParams<Url>) => Promise<Ret>) => [
+				returnType: <Ret extends Json | null>() => ({
+					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Wrap<Ret>>>) => ({
 						method,
-						url,
-
-						// handler factory
-						(args: H) => jsonEndpoint(handlerFactory(args)),
-
-						// proxy factory
-						<BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-							.route(`${baseUrl}${url}` as Concat<BaseUrl, Url>)
+						route: url,
+						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
+						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
 							.queryType<Query>()
-							.returnType<Ret>() as QueryProxy<Query, Concat<BaseUrl, Url>, Ret>
-					] as const
+							.returnType<Wrap<Ret>>() //as QueryProxy<Query, Concat<BaseUrl, Url>, Ret>
+					})
+				})
+			}),
+			headersType: <Headers extends Json<string>>() => ({
+				returnType: <Ret extends Json | null>() => ({
+					handler: <H>(handlerFactory: (args: H) => QueryProxy<Headers, Url, Promise<Wrap<Ret>>>) => ({
+						method,
+						route: url,
+						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
+						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
+							.headersType<Headers>()
+							.returnType<Wrap<Ret>>() //as QueryProxy<Query, Concat<BaseUrl, Url>, Ret>
+					})
 				})
 			})
 		})
@@ -65,10 +70,18 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 }
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
-export function jsonEndpoint<I, O>(fn: (req: I) => Promise<O>, wrap = false): express.Handler {
+export function jsonEndpoint<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, wrap = false): express.Handler {
 	return async (req, res) => {
 		try {
-			const r = await fn({ ...req.body, ...req.query, ...req.headers, ...req.params } as I)
+			const r = await fn({
+				...req.body,
+				...req.query,
+				...req.headers,
+				...req.params,
+				url: req.url,
+				baseUrl: req.baseUrl,
+				originalUrl: req.originalUrl
+			})
 			res.status(statusCodes.OK).json(wrap ? { data: r } : r)
 		}
 		catch (err) {
@@ -91,6 +104,8 @@ export type Endpoint<M extends Method = Method, Route extends string = string, H
 	handlerFactory: (arg: HandlerArgs) => express.Handler,
 	proxyFactory: <P extends string>(arg: P) => (...args: any[]) => Promise<any>
 }
+
+type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
 
 /*function createBodyRoute<M extends BodyMethod, P extends string, U extends string, H extends PGRepo>(route: Route<M, U, H>) {
 	return {
