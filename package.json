@@ -1,7 +1,7 @@
 {
 	"name": "@agyemanjp/http",
 	"version": "0.1.6",
-	"description": "Http library based on request API",
+	"description": "Http communication, routing, and proxying library based on request API",
 	"main": "index.js",
 	"types": "index.d.ts",
 	"files": [

@@ -9,7 +9,7 @@ import { Endpoint } from './endpoint'
 
 
 /** Start express server */
-export function startServer<R>(args: ServerArgs<R>) {
+export function startServer<Context>(args: ServerArgs<Context>) {
 	// configureEnvironment()
 	// const args.name = "auth"
 	const PORT = process?.env?.PORT || args.defaultPort
@@ -23,7 +23,7 @@ export function startServer<R>(args: ServerArgs<R>) {
 	args.middleware.forEach(m => app.use(m))
 
 	// set up main routes
-	args.endpoints.forEach(r => app[r.method.toLowerCase() as Lowercase<Method>](r.route, r.handlerFactory(args.initResource)))
+	args.endpoints.forEach(r => app[r.method.toLowerCase() as Lowercase<Method>](r.route, r.handlerFactory(args.context)))
 
 	console.log(`\n${args.name} server starting...`)
 	const server = app.listen(PORT, () => {
@@ -59,10 +59,10 @@ export function startServer<R>(args: ServerArgs<R>) {
 	process.on('SIGINT', (signal) => cleanShutdown(signal))
 }
 
-type ServerArgs<R> = {
+type ServerArgs<Context> = {
 	name: string
 	middleware: express.Handler[],
-	endpoints: Endpoint<Method, string, R>[],
+	endpoints: Omit<Endpoint<Method, string, Context>[], "proxyFactory">,
 	defaultPort: number
-	initResource: R
+	context: Context
 }
