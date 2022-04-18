@@ -21,10 +21,10 @@ export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
 				returnType: <Ret extends Json | null>() => ({
-					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Wrap<Ret>>>) => ({
+					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Ret>) => ({
 						method,
 						route: url,
-						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args)),
+						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
 						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<BodyMethod>]
 							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
 							.bodyType<Body>()
@@ -41,7 +41,7 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
 				returnType: <Ret extends Json | null>() => ({
-					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Wrap<Ret>>>) => ({
+					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Ret>) => ({
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
