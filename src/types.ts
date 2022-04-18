@@ -390,8 +390,8 @@ export type JsonValue = null | string | number | boolean | Date | Json | JsonArr
 type sObj = Json<string>
 
 
-export type BodyProxy<Body extends Json, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Promise<Ret>
-export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
+export type BodyProxy<Body extends Json, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Ret
+export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Ret
 // export type HeadersProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
 
 export type Wrap<T> = ({ data: T } | { error: string })

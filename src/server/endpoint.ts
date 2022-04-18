@@ -21,7 +21,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: Lowercase<M>) {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
 				returnType: <Ret extends Json | null>() => ({
-					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Ret>) => ({
+					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Wrap<Ret>>>) => ({
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
@@ -41,7 +41,7 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
 				returnType: <Ret extends Json | null>() => ({
-					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Ret>) => ({
+					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Wrap<Ret>>>) => ({
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
@@ -70,7 +70,7 @@ export function queryEndpoint<M extends QueryMethod>(method: Lowercase<M>) {
 }
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
-export function jsonEndpoint<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, wrap = false): express.Handler {
+export function jsonEndpoint<I, O>(fn: (req: I & RequestUrlInfo) => O, wrap = false): express.Handler {
 	return async (req, res) => {
 		try {
 			const r = await fn({
