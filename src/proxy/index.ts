@@ -1,5 +1,5 @@
-import { pick, keys } from "@agyemanjp/standard/object"
-import { ExtractRouteParams, Json, BodyType, MIME_TYPES } from "../types"
+import { Obj, pick, keys } from "@agyemanjp/standard"
+import { ExtractParams, Json, BodyType, MIME_TYPES, JsonArray } from "../common"
 import { request } from "../client"
 
 /** Fluent proxy factory */
@@ -17,18 +17,18 @@ export function queryProxy(method: "get" | "delete") {
 		route: <Route extends string>(url: Route) => ({
 			queryType: <Query extends Json<string>>() => ({
 				returnType: <Res extends Json>() =>
-					async (args: Query & ExtractRouteParams<Route>) =>
+					async (args: Query & ExtractParams<Route>) =>
 						request[method]<Res>({ url, ...parseArgs(url, args, "query"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Query & ExtractRouteParams<Route>) =>
+					async (args: Query & ExtractParams<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "query"), accept })
 			}),
 			headersType: <Headers extends Json<string>>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Headers & ExtractRouteParams<Route>) =>
+					async (args: Headers & ExtractParams<Route>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "headers"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Headers & ExtractRouteParams<Route>) =>
+					async (args: Headers & ExtractParams<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "headers"), accept })
 			})
 		})
@@ -40,23 +40,28 @@ export function bodyProxy(method: "post" | "put" | "patch") {
 		route: <Route extends string>(url: Route) => ({
 			bodyType: <Body extends BodyType>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Body & ExtractRouteParams<Route>) =>
+					async (args: Body & ExtractParams<Route>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Body & ExtractRouteParams<Route>) =>
+					async (args: Body & ExtractParams<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "body"), accept })
 			})
 		})
 	}
 }
 
-function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & ExtractRouteParams<R>, kind: "query"): { query: Q, params: ExtractRouteParams<R> }
-function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & ExtractRouteParams<R>, kind: "headers"): { headers: H, params: ExtractRouteParams<R> }
-function parseArgs<R extends string, B extends Json<string>>(url: R, args: B & ExtractRouteParams<R>, kind: "body"): { body: B, params: ExtractRouteParams<R> }
-function parseArgs<R extends string, T extends Json<string>>(url: R, args: T & ExtractRouteParams<R>, kind: "query" | "headers" | "body") {
+export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret, Params extends Json<string> = Obj<never>> =
+	(args: Body & Exclude<ExtractParams<Route>, Params>) => Ret
+export type QueryProxy<Query extends Json<string>, Route extends string, Ret, Params extends Json<string> = Obj<never>> =
+	(args: Query & Exclude<ExtractParams<Route>, Params>) => Ret
+
+function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & ExtractParams<R>, kind: "query"): { query: Q, params: ExtractParams<R> }
+function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & ExtractParams<R>, kind: "headers"): { headers: H, params: ExtractParams<R> }
+function parseArgs<R extends string, B extends Json<string>>(url: R, args: B & ExtractParams<R>, kind: "body"): { body: B, params: ExtractParams<R> }
+function parseArgs<R extends string, T extends Json<string>>(url: R, args: T & ExtractParams<R>, kind: "query" | "headers" | "body") {
 	return {
 		[kind]: pick(args, ...keys(args).filter(k => !url.includes(`/:${k}/`))) as any,
-		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as ExtractRouteParams<R>
+		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as ExtractParams<R>
 	}
 }
 

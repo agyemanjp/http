@@ -3,13 +3,13 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import { Obj, trimRight } from "@agyemanjp/standard"
+import { Obj, trimRight, reduce, last } from "@agyemanjp/standard"
 import {
-	Json,
+	applyParams,
 	RequestArgs, RequestPUT, RequestPOST, RequestPATCH, RequestDELETE, RequestGET,
 	MIME_TYPES,
-	JsonArray
-} from "../types"
+	JsonArray, Json
+} from "../common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 
@@ -53,15 +53,8 @@ export function any(args: RequestArgs) {
 // const r = req<{ num: number, str: string }>({ url: "", body: {}, accept: "Json", method: "POST" }).then(x => x)
 
 async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TResponse<R["accept"]>> {
-	const queryParams = "query" in args ? `?${getQueryString(args.query)}` : ""
-
-	const urlEffective = `${trimRight(args.url, "/")}${queryParams}`
-	if ("params" in args) {
-		// eslint-disable-next-line fp/no-unused-expression
-		Object.entries(args.params ?? {})
-			.forEach(entry => urlEffective.replace(`/:${entry[0]}/`, entry[1]))
-	}
-
+	const queryParams = "query" in args ? `?${new URLSearchParams(args.query).toString()}` : ""
+	const urlEffective = applyParams(`${trimRight(args.url, "/")}${queryParams}`, args.params ?? {}) as string
 	const contentType: AcceptType | undefined = (("body" in args && args.body !== null)
 		? (() => {
 			switch (true) {
@@ -76,7 +69,6 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 		})()
 		: undefined
 	)
-
 	const body = (("body" in args && args.body !== null)
 		? (() => {
 			switch (true) {
@@ -119,16 +111,6 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 	}).catch(err => {
 		throw `Error making request to ${args.url}\n${err}`
 	})
-}
-
-/** Generate query string from query object */
-function getQueryString<T extends Obj<string> = Obj<string>>(obj?: T, excludedValues: unknown[] = [undefined, null]) {
-	if (!obj)
-		return ""
-	return Object.keys(obj)
-		.filter(k => /*obj.hasOwnProperty(k) &&*/ !excludedValues.includes(obj[k]))
-		.map(k => `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`)
-		.join("&")
 }
 
 type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = AcceptType> = Omit<R, "method"> & { accept: A }

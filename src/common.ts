@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { TypeAssert, Concat } from "@agyemanjp/standard"
+
+import { TypeAssert, Concat, Obj, last, reduce } from '@agyemanjp/standard'
+
+export function applyParams<Url extends string, P extends sObj>(urlWithParams: Url, params: P): string {
+	return last(reduce(
+		Object.entries(params ?? {}), // data
+		urlWithParams as string, // initial
+		(url, [paramKey, paramVal]) => url.replace(`/:${paramKey}/`, paramVal) // reducer
+	))
+}
 
 /** MIME content types */
 export const MIME_TYPES = Object.freeze({
@@ -370,18 +379,6 @@ export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q 
 	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P> | RequestPATCH<B, P>
 )
 
-export type ExtractRouteParams<T extends string> = (
-	string extends T
-	? Record<string, string>
-	: T extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof ExtractRouteParams<Rest>]: string }
-	: T extends `${infer Start}:${infer Param}`
-	? { [k in Param]: string }
-	: {}
-)
-// eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
-const test_extract_route_params: TypeAssert<ExtractRouteParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
-
 export type BodyType = Json | JsonArray | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
 export interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
@@ -390,11 +387,18 @@ export type JsonValue = null | string | number | boolean | Date | Json | JsonArr
 type sObj = Json<string>
 
 
-export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret> = (args: Body & ExtractRouteParams<Route>) => Ret
-export type QueryProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Ret
-// export type HeadersProxy<Query extends Json<string>, Route extends string, Ret> = (args: Query & ExtractRouteParams<Route>) => Promise<Ret>
+export type ExtractParams<Route extends string> = (
+	string extends Route
+	? Record<string, string>
+	: Route extends `${infer Start}:${infer Param}/${infer Rest}`
+	? { [k in Param | keyof ExtractParams<Rest>]: string }
+	: Route extends `${infer Start}:${infer Param}`
+	? { [k in Param]: string }
+	: {}
+)
+// eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
+const test_extract_route_params: TypeAssert<ExtractParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
 
-export type Wrap<T> = ({ data: T } | { error: string })
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>
 // export interface Json { [x: string]: string | number | boolean | Date | Json | JsonArray }
@@ -412,3 +416,16 @@ export type Wrap<T> = ({ data: T } | { error: string })
 // export interface ChunkedMultiPartRelatedData { chunked: true, type: "multi-related-chunked", body: RawData[] }
 
 // export type RequestData = BasicRequestData | MultiPartFormData | MultiPartRelatedData
+
+
+/** Generate query string from query object */
+// function getQueryString<T extends Obj<string> = Obj<string>>(obj?: T, excludedValues: unknown[] = [undefined, null]) {
+// 	if (!obj)
+// 		return ""
+// 	return Object.keys(obj)
+// 		.filter(k => /*obj.hasOwnProperty(k) &&*/ !excludedValues.includes(obj[k]))
+// 		.map(k => `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`)
+// 		.join("&")
+
+// 	new URLSearchParams(obj).toString()
+// }

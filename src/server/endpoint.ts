@@ -1,10 +1,10 @@
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
 import * as express from 'express'
-import { Concat, Obj } from '@agyemanjp/standard/utility'
 
-import { proxy } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, BodyProxy, QueryProxy, Wrap, JsonArray } from "../types"
+import { proxy, BodyProxy, QueryProxy } from "../proxy"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, ExtractParams, applyParams } from "../common"
+import { Obj } from '@agyemanjp/standard'
 
 /** Fluent endpoint factory */
 export const endpoint = {
@@ -14,6 +14,7 @@ export const endpoint = {
 	patch: bodyEndpoint("PATCH"),
 	put: bodyEndpoint("PUT"),
 }
+
 
 /** Fluent body-based route factory */
 export function bodyEndpoint<M extends BodyMethod>(method: M) {
@@ -25,10 +26,11 @@ export function bodyEndpoint<M extends BodyMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<BodyMethod>]
-							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
-							.bodyType<Body>()
-							.returnType<Wrap<Ret>>() //as BodyProxy<Body, Concat<BaseUrl, Url>, Ret>
+						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.bodyType<Body>()
+								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Params>
 					})
 				})
 			})
@@ -45,10 +47,11 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
-							.queryType<Query>()
-							.returnType<Wrap<Ret>>() //as QueryProxy<Query, Concat<BaseUrl, Url>, Ret>
+						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.queryType<Query>()
+								.returnType<Wrap<Ret>>() as QueryProxy<Query, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Params>
 					})
 				})
 			}),
@@ -58,10 +61,11 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string>(baseUrl: BaseUrl) => proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-							.route(`${baseUrl}/${url}` as `${BaseUrl}/${Url}`)
-							.headersType<Headers>()
-							.returnType<Wrap<Ret>>() //as QueryProxy<Query, Concat<BaseUrl, Url>, Ret>
+						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.headersType<Headers>()
+								.returnType<Wrap<Ret>>() as QueryProxy<Headers, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Params>
 					})
 				})
 			})
@@ -106,6 +110,7 @@ export type Endpoint<M extends Method = Method, Route extends string = string, H
 }
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
+type Wrap<T> = ({ data: T } | { error: string })
 
 /*function createBodyRoute<M extends BodyMethod, P extends string, U extends string, H extends PGRepo>(route: Route<M, U, H>) {
 	return {

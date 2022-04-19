@@ -4,7 +4,7 @@ import * as cuid from 'cuid'
 import * as express from 'express'
 import { Obj } from '@agyemanjp/standard/utility'
 
-import { Method } from '../types'
+import { Method } from '../common'
 import { Endpoint } from './endpoint'
 
 
