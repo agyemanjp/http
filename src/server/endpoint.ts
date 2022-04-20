@@ -1,9 +1,10 @@
+/* eslint-disable fp/no-proxy */
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
 import * as express from 'express'
 
 import { proxy, BodyProxy, QueryProxy, Proxy } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, ExtractParams } from "../common"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, ExtractParams, ObjEmpty } from "../common"
 import { Obj } from '@agyemanjp/standard'
 
 /** Fluent endpoint factory */
@@ -26,7 +27,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+						proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
 								.bodyType<Body>()
@@ -47,7 +48,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+						proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
 								.queryType<Query>()
@@ -61,7 +62,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 						method,
 						route: url,
 						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
+						proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
 								.headersType<Headers>()
@@ -101,11 +102,11 @@ export function clientEndpoint<
 	BaseUrl extends string = string,
 	HandlerCtx = any,
 	QueryBody extends Json<string> = Obj<never>,
-	Params extends Json<string> = Obj<never>,
+	Params extends Partial<ExtractParams<Route>> | Obj<never> | void = Obj<never>,
 	Ret extends Json = Json
 >(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
-	const proxy = endpoint.proxyFactory(baseUrl, params)
-	const newRoute = applyParams(endpoint.route, params)
+	const proxy = endpoint.proxyFactory(baseUrl, params as any)
+	const newRoute = applyParams(endpoint.route, params as any)
 	return {
 		method: endpoint.method,
 		route: newRoute,
@@ -118,7 +119,7 @@ export type Endpoint<M extends Method = Method, R extends string = string, H = a
 	method: M,
 	route: R,
 	handlerFactory: (arg: H) => express.Handler,
-	proxyFactory: <BaseUrl extends string, Params extends Obj<string> = Obj<never>>(url: BaseUrl, params: Params) =>
+	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>> | ObjEmpty = ObjEmpty>(url: BaseUrl, params: Params) =>
 		Proxy<Args, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>
 }
 

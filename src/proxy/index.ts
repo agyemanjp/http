@@ -1,5 +1,5 @@
 import { Obj, pick, keys } from "@agyemanjp/standard"
-import { ExtractParams, Json, BodyType, MIME_TYPES, JsonArray } from "../common"
+import { ExtractParams, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty } from "../common"
 import { request } from "../client"
 
 /** Fluent proxy factory */
@@ -50,11 +50,11 @@ export function bodyProxy(method: "post" | "put" | "patch") {
 	}
 }
 
-export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret, Params extends Json<string> = Obj<never>> =
+export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
 	(args: Body & Exclude<ExtractParams<Route>, Params>) => Ret
-export type QueryProxy<Query extends Json<string>, Route extends string, Ret, Params extends Json<string> = Obj<never>> =
+export type QueryProxy<Query extends Json<string>, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
 	(args: Query & Exclude<ExtractParams<Route>, Params>) => Ret
-export type Proxy<Args extends Json<string>, Route extends string, Ret, Params extends Json<string> = Obj<never>> =
+export type Proxy<Args extends Json<string>, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
 	(args: Args & Exclude<ExtractParams<Route>, Params>) => Ret
 
 function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & ExtractParams<R>, kind: "query"): { query: Q, params: ExtractParams<R> }

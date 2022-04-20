@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { TypeAssert, Concat, Obj, last, reduce } from '@agyemanjp/standard'
+import { TypeAssert, entries, Obj, last, reduce, Tuple } from '@agyemanjp/standard'
 
-export function applyParams<Url extends string, P extends sObj>(urlWithParams: Url, params: P): string {
+export function applyParams<Url extends string, P extends Partial<ExtractParams<Url>>>(urlWithParams: Url, params: P): string {
 	return last(reduce(
-		Object.entries(params ?? {}), // data
+		entries(params ?? {}), // data
 		urlWithParams as string, // initial
-		(url, [paramKey, paramVal]) => url.replace(`/:${paramKey}/`, paramVal) // reducer
+		(url, [paramKey, paramVal]) => url.replace(`/:${paramKey}/`, paramVal as any) // reducer
 	))
 }
 
@@ -386,18 +386,20 @@ export type JsonArray = Array<JsonValue>
 export type JsonValue = null | string | number | boolean | Date | Json | JsonArray
 type sObj = Json<string>
 
+export type ObjEmpty = { [k in never]: never }
 
 export type ExtractParams<Route extends string> = (
 	string extends Route
-	? Record<string, string>
+	? Obj<string>
 	: Route extends `${infer Start}:${infer Param}/${infer Rest}`
 	? { [k in Param | keyof ExtractParams<Rest>]: string }
 	: Route extends `${infer Start}:${infer Param}`
 	? { [k in Param]: string }
-	: {}
+	: ObjEmpty
 )
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
 const test_extract_route_params: TypeAssert<ExtractParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
+// type TTT = ExtractParams<"auth.com/:cat/api/:app/verify"
 
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>
