@@ -101,8 +101,8 @@ export function clientEndpoint<
 	Route extends string = string,
 	BaseUrl extends string = string,
 	HandlerCtx = any,
-	QueryBody extends Json<string> = Obj<never>,
-	Params extends Partial<ExtractParams<Route>> | Obj<never> | void = Obj<never>,
+	QueryBody extends Json<string> = ObjEmpty,
+	Params extends Partial<ExtractParams<Route>> = ObjEmpty,
 	Ret extends Json = Json
 >(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
 	const proxy = endpoint.proxyFactory(baseUrl, params as any)
@@ -155,3 +155,47 @@ type Wrap<T> = ({ data: T } | { error: string })
 		})
 	}
 }*/
+
+
+type User = {
+	id: string,
+	displayName: string,
+	emailAddress: string,
+	companyName: string,
+	accessLevel: number,
+	whenVerified?: number,
+	app: string
+}
+
+// const verify = endpoint
+// 	.post
+// 	.url("/:app/verify")
+// 	.bodyType<{ emailAddress: string, verificationCode: string, accessLevel: number }>()
+// 	.returnType<User>()
+// 	.handler<PGRepo>(db => (async (args) => {
+// 		const { emailAddress, verificationCode, accessLevel } = args
+// 		const users = await db.getAsync("users", {
+// 			filters: [
+// 				{ fieldName: "emailAdress", operator: "equals", value: emailAddress },
+// 				{ fieldName: "verificationCode", operator: "equals", value: verificationCode }
+// 			]
+// 		})
+// 		console.log(`Users matching verification found: ${stringify(users)}`)
+
+// 		if (users.length > 0) {
+// 			const updatedUser = {
+// 				...users[0],
+// 				whenVerified: Date.now(),
+// 				...(accessLevel ? { accessLevel: accessLevel } : {}
+// 				)
+// 			} as User
+// 			await db.updateAsync("usersReadonly", updatedUser)
+// 			return sanitizeUser(updatedUser)
+// 		}
+// 		else {
+// 			throw (statusCodes.NOT_FOUND.toString())
+// 		}
+// 	}))
+
+
+// const verifyClient = clientEndpoint(verify, "authURL", { app: "" })

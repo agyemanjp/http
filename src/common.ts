@@ -1,12 +1,19 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { TypeAssert, entries, Obj, last, reduce, Tuple } from '@agyemanjp/standard'
+import { TypeAssert, Tuple, Obj, last, reduce } from '@agyemanjp/standard'
+
+function entries<O extends Obj>(obj: O) {
+	return Object.entries(obj) as Tuple<keyof O, O[keyof O]>[]
+}
 
 export function applyParams<Url extends string, P extends Partial<ExtractParams<Url>>>(urlWithParams: Url, params: P): string {
+
 	return last(reduce(
-		entries(params ?? {}), // data
+		entries(params), // data
 		urlWithParams as string, // initial
-		(url, [paramKey, paramVal]) => url.replace(`/:${paramKey}/`, paramVal as any) // reducer
+		(url, [paramKey, paramVal]) => {
+			return url.replace(`/:${paramKey}/`, String(paramVal)) // reducer
+		}
 	))
 }
 
@@ -388,13 +395,15 @@ type sObj = Json<string>
 
 export type ObjEmpty = { [k in never]: never }
 
+type OO<K extends string, V> = { [k in K]: V }
+
 export type ExtractParams<Route extends string> = (
 	string extends Route
 	? Obj<string>
 	: Route extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof ExtractParams<Rest>]: string }
+	? OO<Param | keyof ExtractParams<Rest>, string>// { [k in Param | keyof ExtractParams<Rest>]: string }
 	: Route extends `${infer Start}:${infer Param}`
-	? { [k in Param]: string }
+	? OO<Param, string>// { [k in Param]: string }
 	: ObjEmpty
 )
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
