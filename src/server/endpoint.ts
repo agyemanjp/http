@@ -104,7 +104,7 @@ export function clientEndpoint<
 	BaseUrl extends string,
 	HandlerCtx,
 	Params extends Partial<ExtractParams<`${BaseUrl}/${Route}`>>,
-	Ret extends Json
+	Ret extends Json | JsonArray | null
 >(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
 	const proxy = endpoint.proxyFactory(baseUrl, params)
 	const newRoute = applyParams(endpoint.route, params as any)
@@ -116,7 +116,7 @@ export function clientEndpoint<
 	} as EndpointFinal<M, QueryBody & Omit<ExtractParams<`${BaseUrl}/${Route}`>, keyof Params>, Ret>
 }
 
-export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = ObjEmpty, Ret extends Json = Json> = {
+export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = ObjEmpty, Ret extends Json | JsonArray | null = Json> = {
 	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>>>(url: BaseUrl, params: Params) =>
 		Proxy<QueryBody, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>;
 	handlerFactory: (arg: H) => express.Handler;
@@ -124,7 +124,7 @@ export type Endpoint<M extends Method = Method, R extends string = string, H = a
 	method: M;
 }
 
-export type EndpointFinal<M extends Method, Args, Ret> = {
+export type EndpointFinal<M extends Method = Method, Args = ObjEmpty, Ret extends Json | JsonArray | null = Json> = {
 	proxy: (args: Args) => Promise<Wrap<Ret>>;
 	handler: express.Handler;
 	route: string;
@@ -156,17 +156,6 @@ type Wrap<T> = ({ data: T } | { error: string })
 		})
 	}
 }*/
-
-
-type User = {
-	id: string,
-	displayName: string,
-	emailAddress: string,
-	companyName: string,
-	accessLevel: number,
-	whenVerified?: number,
-	app: string
-}
 
 // eslint-disable-next-line fp/no-let, init-declarations, @typescript-eslint/no-unused-vars
 /*let e: EndpointFinal<"GET", Omit<ExtractParams<`${"BaseUrl"}/${"/:Route"}`>, keyof {}>, { x: number }>
@@ -202,4 +191,13 @@ const verify = endpoint
 
 const { method, route, handlerFactory, proxyFactory } = verify
 const verifyClient = clientEndpoint(verify, "authURL", { app: "" })
+type User = {
+	id: string,
+	displayName: string,
+	emailAddress: string,
+	companyName: string,
+	accessLevel: number,
+	whenVerified?: number,
+	app: string
+}
 */
