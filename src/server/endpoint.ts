@@ -116,7 +116,7 @@ export function clientEndpoint<
 	} as EndpointFinal<M, QueryBody & Omit<ExtractParams<`${BaseUrl}/${Route}`>, keyof Params>, Ret>
 }
 
-export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = ObjEmpty, Ret extends Json | JsonArray | null = Json> = {
+export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = Obj, Ret extends Json | JsonArray | null = Json> = {
 	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>>>(url: BaseUrl, params: Params) =>
 		Proxy<QueryBody, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>;
 	handlerFactory: (arg: H) => express.Handler;
@@ -124,7 +124,7 @@ export type Endpoint<M extends Method = Method, R extends string = string, H = a
 	method: M;
 }
 
-export type EndpointFinal<M extends Method = Method, Args = ObjEmpty, Ret extends Json | JsonArray | null = Json> = {
+export type EndpointFinal<M extends Method = Method, Args = Obj, Ret extends Json | JsonArray | null = Json> = {
 	proxy: (args: Args) => Promise<Wrap<Ret>>;
 	handler: express.Handler;
 	route: string;
