@@ -23,7 +23,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
-				returnType: <Ret extends Json | JsonArray | null>() => ({
+				returnType: <Ret extends JsonRet>() => ({
 					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Ret>>) => ({
 						proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
@@ -44,7 +44,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
-				returnType: <Ret extends Json | JsonArray | null>() => ({
+				returnType: <Ret extends JsonRet>() => ({
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
@@ -58,7 +58,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 				})
 			}),
 			headersType: <Headers extends Json<string>>() => ({
-				returnType: <Ret extends Json | JsonArray | null>() => ({
+				returnType: <Ret extends JsonRet>() => ({
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Headers, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
@@ -104,7 +104,7 @@ export function clientEndpoint<
 	BaseUrl extends string,
 	HandlerCtx,
 	Params extends Partial<ExtractParams<`${BaseUrl}/${Route}`>>,
-	Ret extends Json | JsonArray | null
+	Ret extends JsonRet
 >(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
 	const proxy = endpoint.proxyFactory(baseUrl, params)
 	const newRoute = applyParams(endpoint.route, params as any)
@@ -116,7 +116,7 @@ export function clientEndpoint<
 	} as EndpointFinal<M, QueryBody & Omit<ExtractParams<`${BaseUrl}/${Route}`>, keyof Params>, Ret>
 }
 
-export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = any, Ret extends Json | JsonArray | null = Json> = {
+export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = any, Ret extends JsonRet = JsonRet> = {
 	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>>>(url: BaseUrl, params: Params) =>
 		Proxy<QueryBody, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>;
 	handlerFactory: (arg: H) => express.Handler;
@@ -124,7 +124,7 @@ export type Endpoint<M extends Method = Method, R extends string = string, H = a
 	method: M;
 }
 
-export type EndpointFinal<M extends Method = Method, Args = any, Ret extends Json | JsonArray | null = Json> = {
+export type EndpointFinal<M extends Method = Method, Args = any, Ret extends JsonRet = JsonRet> = {
 	proxy: (args: Args) => Promise<Wrap<Ret>>;
 	handler: express.Handler;
 	route: string;
@@ -133,6 +133,7 @@ export type EndpointFinal<M extends Method = Method, Args = any, Ret extends Jso
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
 type Wrap<T> = ({ data: T } | { error: string })
+type JsonRet = Json | JsonArray | null
 
 /*function createBodyRoute<M extends BodyMethod, P extends string, U extends string, H extends PGRepo>(route: Route<M, U, H>) {
 	return {
