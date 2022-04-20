@@ -2,8 +2,8 @@
 /* eslint-disable no-shadow */
 import * as express from 'express'
 
-import { proxy, BodyProxy, QueryProxy } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, ExtractParams, applyParams } from "../common"
+import { proxy, BodyProxy, QueryProxy, Proxy } from "../proxy"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, ExtractParams } from "../common"
 import { Obj } from '@agyemanjp/standard'
 
 /** Fluent endpoint factory */
@@ -25,7 +25,7 @@ export function bodyEndpoint<M extends BodyMethod>(method: M) {
 					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
-						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
+						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
 						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
@@ -46,7 +46,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Query, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
-						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
+						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
 						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
@@ -60,7 +60,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 					handler: <H>(handlerFactory: (args: H) => QueryProxy<Headers, Url, Promise<Ret>>) => ({
 						method,
 						route: url,
-						handlerFactory: (args: H) => jsonEndpoint(handlerFactory(args), true /* wrap json results */),
+						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
 						proxyFactory: <BaseUrl extends string, Params extends Obj<string>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
@@ -74,7 +74,7 @@ export function queryEndpoint<M extends QueryMethod>(method: M) {
 }
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
-export function jsonEndpoint<I, O>(fn: (req: I & RequestUrlInfo) => O, wrap = false): express.Handler {
+export function jsonHandler<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, wrap = false): express.Handler {
 	return async (req, res) => {
 		try {
 			const r = await fn({
@@ -94,19 +94,39 @@ export function jsonEndpoint<I, O>(fn: (req: I & RequestUrlInfo) => O, wrap = fa
 	}
 }
 
-/** Creates an endpoint that delegates to another endpoint without modifying its behavior in any way */
-export function passthroughEndpointProxy<M extends Method = Method, R extends string = string, H = any>(endpoint: Endpoint<M, R, H>): Endpoint<M, R, H> {
+/** Creates a client final endpoint based on a server endpoint */
+export function clientEndpoint<
+	M extends Method = Method,
+	Route extends string = string,
+	BaseUrl extends string = string,
+	HandlerCtx = any,
+	QueryBody extends Json<string> = Obj<never>,
+	Params extends Json<string> = Obj<never>,
+	Ret extends Json = Json
+>(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
+	const proxy = endpoint.proxyFactory(baseUrl, params)
+	const newRoute = applyParams(endpoint.route, params)
 	return {
-		...endpoint,
-		proxyFactory: (urlExternalBase) => endpoint.proxyFactory(urlExternalBase)
-	}
+		method: endpoint.method,
+		route: newRoute,
+		handler: jsonHandler(proxy),
+		proxy: proxy
+	} as EndpointFinal<M, QueryBody & Exclude<ExtractParams<`${BaseUrl}/${Route}`>, Params>, Ret>
 }
 
-export type Endpoint<M extends Method = Method, Route extends string = string, HandlerArgs = any> = {
+export type Endpoint<M extends Method = Method, R extends string = string, H = any, Args extends Json<string> = Json<string>, Ret extends Json = Json> = {
 	method: M,
-	route: Route,
-	handlerFactory: (arg: HandlerArgs) => express.Handler,
-	proxyFactory: <P extends string>(arg: P) => (...args: any[]) => Promise<any>
+	route: R,
+	handlerFactory: (arg: H) => express.Handler,
+	proxyFactory: <BaseUrl extends string, Params extends Obj<string> = Obj<never>>(url: BaseUrl, params: Params) =>
+		Proxy<Args, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>
+}
+
+export type EndpointFinal<M extends Method = Method, Args extends Json = Json, Ret extends Json = Json> = {
+	method: M,
+	route: string,
+	handler: express.Handler,
+	proxy: (args: Args) => Promise<Wrap<Ret>>
 }
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
