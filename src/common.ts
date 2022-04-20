@@ -401,9 +401,9 @@ export type ExtractParams<Route extends string> = (
 	string extends Route
 	? Obj<string>
 	: Route extends `${infer Start}:${infer Param}/${infer Rest}`
-	? OO<Param | keyof ExtractParams<Rest>, string>// { [k in Param | keyof ExtractParams<Rest>]: string }
+	? { [k in Param | keyof ExtractParams<Rest>]: string }
 	: Route extends `${infer Start}:${infer Param}`
-	? OO<Param, string>// { [k in Param]: string }
+	? { [k in Param]: string }
 	: ObjEmpty
 )
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars

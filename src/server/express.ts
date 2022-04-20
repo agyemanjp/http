@@ -62,7 +62,7 @@ export function startServer<Context>(args: ServerArgs<Context>) {
 type ServerArgs<Context> = {
 	name: string
 	middleware: express.Handler[],
-	endpoints: Omit<Endpoint<Method, string, Context>[], "proxyFactory">,
+	endpoints: Omit<Endpoint, "proxyFactory">[],
 	defaultPort: number
 	context: Context
 }

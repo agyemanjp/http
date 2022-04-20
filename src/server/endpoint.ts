@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable fp/no-proxy */
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
@@ -24,21 +25,21 @@ export function bodyEndpoint<M extends BodyMethod>(method: M) {
 			bodyType: <Body extends Json>() => ({
 				returnType: <Ret extends Json | JsonArray | null>() => ({
 					handler: <H>(handlerFactory: (args: H) => BodyProxy<Body, Url, Promise<Ret>>) => ({
-						method,
-						route: url,
-						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
 						proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Params) =>
 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
 								.route(applyParams(`${baseUrl}/${url}`, params))
 								.bodyType<Body>()
-								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Params>
+								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Params>,
+						handlerFactory: (args: H) => jsonHandler(handlerFactory(args), true /* wrap json results */),
+						route: url,
+						method,
 					})
 				})
 			})
 		})
 	}
 }
-/** Fluent query-based route factory */
+/** Fluent query-based endpoint factory */
 export function queryEndpoint<M extends QueryMethod>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
@@ -97,37 +98,37 @@ export function jsonHandler<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, w
 
 /** Creates a client final endpoint based on a server endpoint */
 export function clientEndpoint<
-	M extends Method = Method,
-	Route extends string = string,
-	BaseUrl extends string = string,
-	HandlerCtx = any,
-	QueryBody extends Json<string> = ObjEmpty,
-	Params extends Partial<ExtractParams<Route>> = ObjEmpty,
-	Ret extends Json = Json
+	QueryBody,
+	M extends Method,
+	Route extends string,
+	BaseUrl extends string,
+	HandlerCtx,
+	Params extends Partial<ExtractParams<`${BaseUrl}/${Route}`>>,
+	Ret extends Json
 >(endpoint: Endpoint<M, Route, HandlerCtx, QueryBody, Ret>, baseUrl: BaseUrl, params: Params) {
-	const proxy = endpoint.proxyFactory(baseUrl, params as any)
+	const proxy = endpoint.proxyFactory(baseUrl, params)
 	const newRoute = applyParams(endpoint.route, params as any)
 	return {
 		method: endpoint.method,
 		route: newRoute,
 		handler: jsonHandler(proxy),
 		proxy: proxy
-	} as EndpointFinal<M, QueryBody & Exclude<ExtractParams<`${BaseUrl}/${Route}`>, Params>, Ret>
+	} as EndpointFinal<M, QueryBody & Omit<ExtractParams<`${BaseUrl}/${Route}`>, keyof Params>, Ret>
 }
 
-export type Endpoint<M extends Method = Method, R extends string = string, H = any, Args extends Json<string> = Json<string>, Ret extends Json = Json> = {
-	method: M,
-	route: R,
-	handlerFactory: (arg: H) => express.Handler,
-	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>> | ObjEmpty = ObjEmpty>(url: BaseUrl, params: Params) =>
-		Proxy<Args, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>
+export type Endpoint<M extends Method = Method, R extends string = string, H = any, QueryBody = ObjEmpty, Ret extends Json = Json> = {
+	proxyFactory: <BaseUrl extends string, Params extends Partial<ExtractParams<`${BaseUrl}/${R}`>>>(url: BaseUrl, params: Params) =>
+		Proxy<QueryBody, `${BaseUrl}/${R}`, Promise<Wrap<Ret>>, Params>;
+	handlerFactory: (arg: H) => express.Handler;
+	route: R;
+	method: M;
 }
 
-export type EndpointFinal<M extends Method = Method, Args extends Json = Json, Ret extends Json = Json> = {
-	method: M,
-	route: string,
-	handler: express.Handler,
-	proxy: (args: Args) => Promise<Wrap<Ret>>
+export type EndpointFinal<M extends Method, Args, Ret> = {
+	proxy: (args: Args) => Promise<Wrap<Ret>>;
+	handler: express.Handler;
+	route: string;
+	method: M;
 }
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
@@ -167,35 +168,38 @@ type User = {
 	app: string
 }
 
-// const verify = endpoint
-// 	.post
-// 	.url("/:app/verify")
-// 	.bodyType<{ emailAddress: string, verificationCode: string, accessLevel: number }>()
-// 	.returnType<User>()
-// 	.handler<PGRepo>(db => (async (args) => {
-// 		const { emailAddress, verificationCode, accessLevel } = args
-// 		const users = await db.getAsync("users", {
-// 			filters: [
-// 				{ fieldName: "emailAdress", operator: "equals", value: emailAddress },
-// 				{ fieldName: "verificationCode", operator: "equals", value: verificationCode }
-// 			]
-// 		})
-// 		console.log(`Users matching verification found: ${stringify(users)}`)
+// eslint-disable-next-line fp/no-let, init-declarations, @typescript-eslint/no-unused-vars
+/*let e: EndpointFinal<"GET", Omit<ExtractParams<`${"BaseUrl"}/${"/:Route"}`>, keyof {}>, { x: number }>
+const verify = endpoint
+	.post
+	.url("/:app/verify")
+	.bodyType<{ emailAddress: string, verificationCode: string, accessLevel: number }>()
+	.returnType<User>()
+	.handler<{ getAsync: Function }>(db => (async (args) => {
+		const { emailAddress, verificationCode, accessLevel } = args
+		const users = await db.getAsync("users", {
+			filters: [
+				{ fieldName: "emailAdress", operator: "equals", value: emailAddress },
+				{ fieldName: "verificationCode", operator: "equals", value: verificationCode }
+			]
+		})
+		console.log(`Users matching verification found: ${stringify(users)}`)
 
-// 		if (users.length > 0) {
-// 			const updatedUser = {
-// 				...users[0],
-// 				whenVerified: Date.now(),
-// 				...(accessLevel ? { accessLevel: accessLevel } : {}
-// 				)
-// 			} as User
-// 			await db.updateAsync("usersReadonly", updatedUser)
-// 			return sanitizeUser(updatedUser)
-// 		}
-// 		else {
-// 			throw (statusCodes.NOT_FOUND.toString())
-// 		}
-// 	}))
+		if (users.length > 0) {
+			const updatedUser = {
+				...users[0],
+				whenVerified: Date.now(),
+				...(accessLevel ? { accessLevel: accessLevel } : {}
+				)
+			} as User
+			await db.updateAsync("usersReadonly", updatedUser)
+			return sanitizeUser(updatedUser)
+		}
+		else {
+			throw (statusCodes.NOT_FOUND.toString())
+		}
+	}))
 
-
-// const verifyClient = clientEndpoint(verify, "authURL", { app: "" })
+const { method, route, handlerFactory, proxyFactory } = verify
+const verifyClient = clientEndpoint(verify, "authURL", { app: "" })
+*/

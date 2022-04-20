@@ -51,11 +51,11 @@ export function bodyProxy(method: "post" | "put" | "patch") {
 }
 
 export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: Body & Exclude<ExtractParams<Route>, Params>) => Ret
+	(args: Body & Omit<ExtractParams<Route>, keyof Params>) => Ret
 export type QueryProxy<Query extends Json<string>, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: Query & Exclude<ExtractParams<Route>, Params>) => Ret
-export type Proxy<Args extends Json<string>, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: Args & Exclude<ExtractParams<Route>, Params>) => Ret
+	(args: Query & Omit<ExtractParams<Route>, keyof Params>) => Ret
+export type Proxy<QueryBody, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
+	(args: QueryBody & Omit<ExtractParams<Route>, keyof Params>) => Ret
 
 function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & ExtractParams<R>, kind: "query"): { query: Q, params: ExtractParams<R> }
 function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & ExtractParams<R>, kind: "headers"): { headers: H, params: ExtractParams<R> }
