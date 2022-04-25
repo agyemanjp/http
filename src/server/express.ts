@@ -5,38 +5,42 @@ import * as express from 'express'
 import { Obj } from '@agyemanjp/standard/utility'
 
 import { Method } from '../common'
-import { Endpoint } from './endpoint'
 
 
 /** Start express server */
 export function startServer<Context>(args: ServerArgs<Context>) {
-	// configureEnvironment()
-	// const args.name = "auth"
-	const PORT = process?.env?.PORT || args.defaultPort
-	const sockets: Obj<Net.Socket> = {}
-
-	// console.log(`process.env.DATABASE_URL: ${process.env.DATABASE_URL} `)
-	// const dbRepo = new PostgresRepository({ dbUrl: process.env.DATABASE_URL! })
 	const app = express()
 
-	// set up middleware
-	args.middleware.forEach(m => app.use(m))
+	// Set up routes
+	args.routes.forEach(route =>
+		typeof route === "function"
+			? app.use(route)
+			: app[route[0]](route[1], route[2](args.context))
+	)
 
-	// set up main routes
-	args.endpoints.forEach(r => app[r.method.toLowerCase() as Lowercase<Method>](r.route, r.handlerFactory(args.context)))
+	const sockets: Obj<Net.Socket> = {}
 
+	// Start server
 	console.log(`\n${args.name} server starting...`)
-	const server = app.listen(PORT, () => {
-		console.log(`${args.name} server started on port ${PORT} at ${new Date().toLocaleString()} \n`, true)
-	})
-	server.on('connection', socket => {
-		const socketId = cuid()
-		// eslint-disable-next-line fp/no-delete
-		socket.on('close', () => delete sockets[socketId])
-		sockets[socketId] = socket
-	})
+	const server = (app
+		.listen(args.port, () => {
+			console.log(`${args.name} server started on port ${args.port} at ${new Date().toLocaleString()} \n`)
+		})
+		.on('connection', socket => {
+			const socketId = cuid()
+			// eslint-disable-next-line fp/no-delete
+			socket.on('close', () => delete sockets[socketId])
+			sockets[socketId] = socket
+		})
+	)
 
-	const cleanShutdown = (reason: unknown, error?: unknown) => {
+	// Setup process error handlers
+	process.on('unhandledRejection', (reason: unknown) => cleanShutdown(`Unhandled rejection`, reason))
+	process.on('uncaughtException', (err: Error) => cleanShutdown(`Uncaught exception`, err))
+	process.on('SIGTERM', (signal) => cleanShutdown(signal))
+	process.on('SIGINT', (signal) => cleanShutdown(signal))
+
+	function cleanShutdown(reason: unknown, error?: unknown) {
 		if (error)
 			console.error(`\n${args.name} server shutting down due to: ${reason}\n${error instanceof Error ? error.stack : error}`)
 		else
@@ -52,17 +56,19 @@ export function startServer<Context>(args: ServerArgs<Context>) {
 			//console.log('socket', socketId, 'destroyed')
 		})
 	}
-
-	process.on('unhandledRejection', (reason: unknown) => cleanShutdown(`Unhandled rejection`, reason))
-	process.on('uncaughtException', (err: Error) => cleanShutdown(`Uncaught exception`, err))
-	process.on('SIGTERM', (signal) => cleanShutdown(signal))
-	process.on('SIGINT', (signal) => cleanShutdown(signal))
 }
+
 
 type ServerArgs<Context> = {
 	name: string
-	middleware: express.Handler[],
-	endpoints: Omit<Endpoint, "proxyFactory">[],
-	defaultPort: number
+	routes: (
+		[
+			method: Lowercase<Method>,
+			path: string,
+			handlerFactory: (ctx: Context) => express.Handler
+		]
+		| express.Handler
+	)[],
+	port: number | string
 	context: Context
 }
