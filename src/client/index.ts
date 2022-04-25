@@ -3,13 +3,8 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import { Obj, trimRight, reduce, last } from "@agyemanjp/standard"
-import {
-	applyParams,
-	RequestArgs, RequestPUT, RequestPOST, RequestPATCH, RequestDELETE, RequestGET,
-	MIME_TYPES,
-	JsonArray, Json
-} from "../common"
+import { trimRight } from "@agyemanjp/standard"
+import { applyParams, MIME_TYPES, JsonArray, Json, BodyType } from "../common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 
@@ -113,6 +108,41 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 	})
 }
 
+export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
+	url: string;
+	accept?: keyof typeof MIME_TYPES;
+	headers?: sObj;
+}
+export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	method: "GET";
+	query?: Q;
+	params?: P;
+}
+export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
+	method: "DELETE";
+	query?: Q;
+	params?: P;
+}
+export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
+	method: "PUT";
+	params?: P;
+	body: B;
+}
+export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
+	method: "PATCH";
+	params?: P;
+	body: B;
+}
+export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
+	method: "POST";
+	params?: P,
+	body: B
+}
+
+export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = (
+	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P> | RequestPATCH<B, P>
+)
+
 type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = AcceptType> = Omit<R, "method"> & { accept: A }
 
 type AcceptType = keyof typeof MIME_TYPES
@@ -125,5 +155,7 @@ type TResponse<A extends AcceptType | undefined> = (
 	A extends "Binary" ? ArrayBuffer :
 	ReadableStream<Uint8Array> | null
 )
+
+type sObj = Json<string>
 
 

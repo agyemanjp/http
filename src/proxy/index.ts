@@ -1,5 +1,5 @@
 import { Obj, pick, keys } from "@agyemanjp/standard"
-import { ExtractParams, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty } from "../common"
+import { Params, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty } from "../common"
 import { request } from "../client"
 
 /** Fluent proxy factory */
@@ -17,18 +17,18 @@ export function queryProxy(method: "get" | "delete") {
 		route: <Route extends string>(url: Route) => ({
 			queryType: <Query extends Json<string>>() => ({
 				returnType: <Res extends Json>() =>
-					async (args: Query & ExtractParams<Route>) =>
+					async (args: Query & Params<Route>) =>
 						request[method]<Res>({ url, ...parseArgs(url, args, "query"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Query & ExtractParams<Route>) =>
+					async (args: Query & Params<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "query"), accept })
 			}),
 			headersType: <Headers extends Json<string>>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Headers & ExtractParams<Route>) =>
+					async (args: Headers & Params<Route>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "headers"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Headers & ExtractParams<Route>) =>
+					async (args: Headers & Params<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "headers"), accept })
 			})
 		})
@@ -40,30 +40,30 @@ export function bodyProxy(method: "post" | "put" | "patch") {
 		route: <Route extends string>(url: Route) => ({
 			bodyType: <Body extends BodyType>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Body & ExtractParams<Route>) =>
+					async (args: Body & Params<Route>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Body & ExtractParams<Route>) =>
+					async (args: Body & Params<Route>) =>
 						request[method]({ url, ...parseArgs(url, args, "body"), accept })
 			})
 		})
 	}
 }
 
-export type BodyProxy<Body extends Json | JsonArray, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: Body & Omit<ExtractParams<Route>, keyof Params>) => Ret
-export type QueryProxy<Query extends Json<string>, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: Query & Omit<ExtractParams<Route>, keyof Params>) => Ret
-export type Proxy<QueryBody, Route extends string, Ret, Params extends Partial<ExtractParams<Route>> = ObjEmpty> =
-	(args: QueryBody & Omit<ExtractParams<Route>, keyof Params>) => Ret
+export type BodyProxy<Bdy extends Json | JsonArray, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
+	(args: Bdy & Omit<Params<Url>, keyof Prm>) => Ret
+export type QueryProxy<Qry extends Json<string>, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
+	(args: Qry & Omit<Params<Url>, keyof Prm>) => Ret
+export type Proxy<QueryBody, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
+	(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
 
-function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & ExtractParams<R>, kind: "query"): { query: Q, params: ExtractParams<R> }
-function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & ExtractParams<R>, kind: "headers"): { headers: H, params: ExtractParams<R> }
-function parseArgs<R extends string, B extends Json<string>>(url: R, args: B & ExtractParams<R>, kind: "body"): { body: B, params: ExtractParams<R> }
-function parseArgs<R extends string, T extends Json<string>>(url: R, args: T & ExtractParams<R>, kind: "query" | "headers" | "body") {
+function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & Params<R>, kind: "query"): { query: Q, params: Params<R> }
+function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & Params<R>, kind: "headers"): { headers: H, params: Params<R> }
+function parseArgs<R extends string, B extends Json<string>>(url: R, args: B & Params<R>, kind: "body"): { body: B, params: Params<R> }
+function parseArgs<R extends string, T extends Json<string>>(url: R, args: T & Params<R>, kind: "query" | "headers" | "body") {
 	return {
 		[kind]: pick(args, ...keys(args).filter(k => !url.includes(`/:${k}/`))) as any,
-		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as ExtractParams<R>
+		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as Params<R>
 	}
 }
 

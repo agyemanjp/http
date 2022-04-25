@@ -6,7 +6,7 @@ function entries<O extends Obj>(obj: O) {
 	return Object.entries(obj) as Tuple<keyof O, O[keyof O]>[]
 }
 
-export function applyParams<Url extends string, P extends Partial<ExtractParams<Url>>>(urlWithParams: Url, params: P): string {
+export function applyParams<Url extends string, P extends Partial<Params<Url>>>(urlWithParams: Url, params: P): string {
 
 	return last(reduce(
 		entries(params), // data
@@ -351,63 +351,26 @@ export type IdempotentMethod = "GET" | "DELETE" | "PATCH" | "PUT";
 export type BodyMethod = "POST" | "PATCH" | "PUT";
 export type QueryMethod = "GET" | "DELETE";
 
-export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
-	url: string;
-	accept?: keyof typeof MIME_TYPES;
-	headers?: sObj;
-}
-export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	method: "GET";
-	query?: Q;
-	params?: P;
-}
-export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
-	method: "DELETE";
-	query?: Q;
-	params?: P;
-}
-export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
-	method: "PUT";
-	params?: P;
-	body: B;
-}
-export type RequestPATCH<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
-	method: "PATCH";
-	params?: P;
-	body: B;
-}
-export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {
-	method: "POST";
-	params?: P,
-	body: B
-}
-
-export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = (
-	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P> | RequestPATCH<B, P>
-)
-
 export type BodyType = Json | JsonArray | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
 export interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
 export type JsonArray = Array<JsonValue>
 export type JsonValue = null | string | number | boolean | Date | Json | JsonArray
-type sObj = Json<string>
 
 export type ObjEmpty = { [k in never]: never }
 
-type OO<K extends string, V> = { [k in K]: V }
-
-export type ExtractParams<Route extends string> = (
-	string extends Route
+/** Extract object type containing all param args embedded in a URL pattern */
+export type Params<RoutePath extends string> = (
+	string extends RoutePath
 	? Obj<string>
-	: Route extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof ExtractParams<Rest>]: string }
-	: Route extends `${infer Start}:${infer Param}`
+	: RoutePath extends `${infer Start}:${infer Param}/${infer Rest}`
+	? { [k in Param | keyof Params<Rest>]: string }
+	: RoutePath extends `${infer Start}:${infer Param}`
 	? { [k in Param]: string }
 	: ObjEmpty
 )
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
-const test_extract_route_params: TypeAssert<ExtractParams<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
+const test_extract_route_params: TypeAssert<Params<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
 // type TTT = ExtractParams<"auth.com/:cat/api/:app/verify"
 
 

@@ -1,3 +1,3 @@
 
-export * from "./endpoint"
+export * from "./route"
 export * from "./express"
