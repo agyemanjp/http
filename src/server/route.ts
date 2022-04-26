@@ -9,15 +9,15 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyPar
 
 /** Fluent route factory */
 export const route = {
-	get: queryRoute("GET"),
-	delete: queryRoute("DELETE"),
-	post: bodyRoute("POST"),
-	patch: bodyRoute("PATCH"),
-	put: bodyRoute("PUT"),
+	get: queryRoute("get"),
+	delete: queryRoute("delete"),
+	post: bodyRoute("post"),
+	patch: bodyRoute("patch"),
+	put: bodyRoute("put"),
 }
 
 /** Fluent body-based route factory */
-export function bodyRoute<M extends BodyMethod>(method: M) {
+export function bodyRoute<M extends Lowercase<BodyMethod>>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Body extends Json>() => ({
@@ -38,7 +38,7 @@ export function bodyRoute<M extends BodyMethod>(method: M) {
 	}
 }
 /** Fluent query-based endpoint factory */
-export function queryRoute<M extends QueryMethod>(method: M) {
+export function queryRoute<M extends Lowercase<QueryMethod>>(method: M) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
