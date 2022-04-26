@@ -15,7 +15,9 @@ export function startServer<Context>(args: ServerArgs<Context>) {
 	args.routes.forEach(route =>
 		typeof route === "function"
 			? app.use(route)
-			: app[route[0]](route[1], route[2])
+			: Array.isArray(route)
+				? app[route[0]](route[1], route[2])
+				: app[route.method](route.url, route.handler)
 	)
 
 	const sockets: Obj<Net.Socket> = {}
@@ -62,7 +64,12 @@ export function startServer<Context>(args: ServerArgs<Context>) {
 type ServerArgs<Context> = {
 	name: string
 	routes: (
-		[
+		{
+			handler: express.Handler
+			method: Lowercase<Method>,
+			url: string,
+		}
+		| [
 			method: Lowercase<Method>,
 			url: string,
 			handler: express.Handler
