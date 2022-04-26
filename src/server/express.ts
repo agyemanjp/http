@@ -8,7 +8,7 @@ import { Method } from '../common'
 
 
 /** Start express server */
-export function startServer<Context>(args: ServerArgs<Context>) {
+export function startServer(args: ServerArgs) {
 	const app = express()
 
 	// Set up routes
@@ -61,7 +61,7 @@ export function startServer<Context>(args: ServerArgs<Context>) {
 }
 
 
-type ServerArgs<Context> = {
+type ServerArgs = {
 	name: string
 	routes: (
 		{
@@ -77,5 +77,4 @@ type ServerArgs<Context> = {
 		| express.Handler
 	)[],
 	port: number | string
-	context: Context
 }
