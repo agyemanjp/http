@@ -102,7 +102,7 @@ export function clientRoute<QuryBdy, M extends Method, Url extends string, bUrl 
 ) {
 	const proxy = route.proxyFactory(baseUrl, params)
 	return {
-		method: route.method,
+		method: route.method.toLowerCase(),
 		url: applyParams(route.url, params as any),
 		handler: jsonHandler(proxy),
 		proxy: proxy
@@ -114,14 +114,14 @@ export type Route<M extends Method = Method, Url extends string = string, QueryB
 		Proxy<QueryBody, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>;
 	handler: express.Handler;
 	url: Url;
-	method: M;
+	method: Lowercase<M>;
 }
 
 export type RouteFinal<M extends Method = Method, Args = any, Ret extends JsonRet = JsonRet> = {
 	proxy: (args: Args) => Promise<Wrap<Ret>>;
 	handler: express.Handler;
 	url: string;
-	method: M;
+	method: Lowercase<M>;
 }
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
