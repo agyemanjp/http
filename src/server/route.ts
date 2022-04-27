@@ -96,14 +96,14 @@ export function jsonHandler<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, w
 
 /** Creates a client final route based on a server route */
 export function clientRoute<QuryBdy, M extends Method, Url extends string, bUrl extends string, Prm extends Partial<Params<`${bUrl}/${Url}`>>, Ret extends JsonRet>(
-	endpoint: Route<M, Url, QuryBdy, Ret>,
+	route: Route<M, Url, QuryBdy, Ret>,
 	baseUrl: bUrl,
 	params: Prm
 ) {
-	const proxy = endpoint.proxyFactory(baseUrl, params)
+	const proxy = route.proxyFactory(baseUrl, params)
 	return {
-		method: endpoint.method,
-		url: applyParams(endpoint.route, params as any),
+		method: route.method,
+		url: applyParams(route.url, params as any),
 		handler: jsonHandler(proxy),
 		proxy: proxy
 	} as RouteFinal<M, QuryBdy & Omit<Params<`${bUrl}/${Url}`>, keyof Prm>, Ret>
@@ -113,7 +113,7 @@ export type Route<M extends Method = Method, Url extends string = string, QueryB
 	proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(url: BaseUrl, params: Prm) =>
 		Proxy<QueryBody, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>;
 	handler: express.Handler;
-	route: Url;
+	url: Url;
 	method: M;
 }
 
