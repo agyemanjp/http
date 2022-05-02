@@ -4,74 +4,82 @@
 /* eslint-disable no-shadow */
 import * as express from 'express'
 
-import { proxy, BodyProxy, QueryProxy, Proxy } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, Params } from "../common"
+import { BodyProxy, QueryProxy, Proxy, ProxyFactory } from "../proxy"
+import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, Params, ObjEmpty } from "../common"
 
 /** Fluent route factory */
-export const route = {
-	get: queryRoute("get"),
-	delete: queryRoute("delete"),
-	post: bodyRoute("post"),
-	patch: bodyRoute("patch"),
-	put: bodyRoute("put"),
-}
+// export const route = {
+// 	get: queryRoute("get"),
+// 	delete: queryRoute("delete"),
+// 	post: bodyRoute("post"),
+// 	patch: bodyRoute("patch"),
+// 	put: bodyRoute("put"),
+// }
 
-/** Fluent body-based route factory */
-export function bodyRoute<M extends Lowercase<BodyMethod>>(method: M) {
-	return {
-		url: <Url extends string>(url: Url) => ({
-			bodyType: <Body extends Json>() => ({
-				returnType: <Ret extends JsonRet>() => ({
-					handler: (fn: BodyProxy<Body, Url, Promise<Ret>>) => ({
-						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
-								.route(applyParams(`${baseUrl}/${url}`, params))
-								.bodyType<Body>()
-								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>,
-						handler: jsonHandler(fn, true /* wrap json results */),
-						url,
-						method,
-					})
-				})
-			})
-		})
-	}
-}
+// /** Fluent body-based route factory */
+// export function bodyRoute<M extends Lowercase<BodyMethod>>(method: M) {
+// 	return {
+// 		url: <Url extends string>(url: Url) => ({
+// 			bodyType: <Body extends Json>() => ({
+// 				returnType: <Ret extends JsonRet>() => ({
+// 					handler: (fn: BodyProxy<Body, Url, Promise<Ret>>) => ({
+// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+// 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
+// 								.route(applyParams(`${baseUrl}/${url}`, params))
+// 								.bodyType<Body>()
+// 								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>,
+// 						handler: jsonHandler(fn, true /* wrap json results */),
+// 						url,
+// 						method,
+// 					})
+// 				})
+// 			})
+// 		})
+// 	}
+// }
+// /** Fluent query-based endpoint factory */
+// export function queryRoute<M extends Lowercase<QueryMethod>>(method: M) {
+// 	return {
+// 		url: <Url extends string>(url: Url) => ({
+// 			queryType: <Query extends Json<string>>() => ({
+// 				returnType: <Ret extends JsonRet>() => ({
+// 					handler: (fn: QueryProxy<Query, Url, Promise<Ret>>) => ({
+// 						method,
+// 						url,
+// 						handler: jsonHandler(fn, true /* wrap json results */),
+// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+// 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+// 								.route(applyParams(`${baseUrl}/${url}`, params))
+// 								.queryType<Query>()
+// 								.returnType<Wrap<Ret>>() as QueryProxy<Query, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
+// 					})
+// 				})
+// 			}),
+// 			headersType: <Headers extends Json<string>>() => ({
+// 				returnType: <Ret extends JsonRet>() => ({
+// 					handler: (fn: QueryProxy<Headers, Url, Promise<Ret>>) => ({
+// 						method,
+// 						url,
+// 						handler: jsonHandler(fn, true /* wrap json results */),
+// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+// 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+// 								.route(applyParams(`${baseUrl}/${url}`, params))
+// 								.headersType<Headers>()
+// 								.returnType<Wrap<Ret>>() as QueryProxy<Headers, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
+// 					})
+// 				})
+// 			})
+// 		})
+// 	}
+// }
+
 /** Fluent query-based endpoint factory */
-export function queryRoute<M extends Lowercase<QueryMethod>>(method: M) {
-	return {
-		url: <Url extends string>(url: Url) => ({
-			queryType: <Query extends Json<string>>() => ({
-				returnType: <Ret extends JsonRet>() => ({
-					handler: (fn: QueryProxy<Query, Url, Promise<Ret>>) => ({
-						method,
-						url,
-						handler: jsonHandler(fn, true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-								.route(applyParams(`${baseUrl}/${url}`, params))
-								.queryType<Query>()
-								.returnType<Wrap<Ret>>() as QueryProxy<Query, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
-					})
-				})
-			}),
-			headersType: <Headers extends Json<string>>() => ({
-				returnType: <Ret extends JsonRet>() => ({
-					handler: (fn: QueryProxy<Headers, Url, Promise<Ret>>) => ({
-						method,
-						url,
-						handler: jsonHandler(fn, true /* wrap json results */),
-						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-								.route(applyParams(`${baseUrl}/${url}`, params))
-								.headersType<Headers>()
-								.returnType<Wrap<Ret>>() as QueryProxy<Headers, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
-					})
-				})
-			})
-		})
-	}
-}
+export const router = <Q extends Json<string>, U extends string, R>(proxy: ProxyFactory<Q, U, R>, handlerFn: Proxy<Q, U, Promise<R>>) => ({
+	method: proxy.method,
+	url: proxy.url,
+	handler: jsonHandler(handlerFn, true /* wrap json results */),
+})
+
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
 export function jsonHandler<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, wrap = false): express.Handler {

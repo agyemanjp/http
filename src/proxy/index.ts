@@ -1,50 +1,115 @@
+/* eslint-disable fp/no-proxy */
+/* eslint-disable fp/no-mutating-assign */
 import { Obj, pick, keys } from "@agyemanjp/standard"
-import { Params, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty } from "../common"
+import { Params, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty, Method, applyParams } from "../common"
 import { request } from "../client"
 
 /** Fluent proxy factory */
-export const proxy = {
-	get: queryProxy("get"),
-	delete: queryProxy("delete"),
-	post: bodyProxy("post"),
-	patch: bodyProxy("patch"),
-	put: bodyProxy("put"),
-}
+// export const proxy = {
+// 	get: queryProxy("get"),
+// 	delete: queryProxy("delete"),
+// 	post: bodyProxy("post"),
+// 	patch: bodyProxy("patch"),
+// 	put: bodyProxy("put"),
+// }
 
 /** Fluent query-based proxy factory */
-export function queryProxy(method: "get" | "delete") {
+// export function queryProxy(method: "get" | "delete") {
+// 	return {
+// 		route: <Route extends string>(url: Route) => ({
+// 			queryType: <Query extends Json<string>>() => ({
+// 				returnType: <Res extends Json>() =>
+// 					async (args: Query & Params<Route>) =>
+// 						request[method]<Res>({ url, ...parseArgs(url, args, "query"), accept: "Json" }),
+// 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
+// 					async (args: Query & Params<Route>) =>
+// 						request[method]({ url, ...parseArgs(url, args, "query"), accept })
+// 			}),
+// 			headersType: <Headers extends Json<string>>() => ({
+// 				returnType: <Ret extends Json>() =>
+// 					async (args: Headers & Params<Route>) =>
+// 						request[method]<Ret>({ url, ...parseArgs(url, args, "headers"), accept: "Json" }),
+// 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
+// 					async (args: Headers & Params<Route>) =>
+// 						request[method]({ url, ...parseArgs(url, args, "headers"), accept })
+// 			})
+// 		})
+// 	}
+// }
+
+export function queryProxyFactory(method: "get" | "delete") {
 	return {
-		route: <Route extends string>(url: Route) => ({
+		route: <Url extends string>(url: Url) => ({
 			queryType: <Query extends Json<string>>() => ({
-				returnType: <Res extends Json>() =>
-					async (args: Query & Params<Route>) =>
-						request[method]<Res>({ url, ...parseArgs(url, args, "query"), accept: "Json" }),
-				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Query & Params<Route>) =>
-						request[method]({ url, ...parseArgs(url, args, "query"), accept })
+				returnType: <Ret extends Json>() =>
+					async (args: Query & Params<Url>) =>
+						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+				responseType: <Accept extends MIMETypeKey>(accept: Accept) => {
+					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
+						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
+						return async (args: Query & Omit<Params<Url>, keyof Prm>) => request[method]({
+							url: urlEffective,
+							...parseArgs(urlEffective, args, "query"),
+							accept
+						})
+					}
+					return Object.assign(factory, { proxy: factory("", {}), method, url })
+				}
 			}),
 			headersType: <Headers extends Json<string>>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Headers & Params<Route>) =>
-						request[method]<Ret>({ url, ...parseArgs(url, args, "headers"), accept: "Json" }),
-				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Headers & Params<Route>) =>
-						request[method]({ url, ...parseArgs(url, args, "headers"), accept })
+					async (args: Headers & Params<Url>) =>
+						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+				responseType: <Accept extends MIMETypeKey>(accept: Accept) => {
+					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
+						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
+						return async (args: Headers & Omit<Params<Url>, keyof Prm>) => request[method]({
+							url: urlEffective,
+							...parseArgs(urlEffective, args, "headers"),
+							accept
+						})
+					}
+					return Object.assign(factory, { proxy: factory("", {}), method, url })
+				}
 			})
 		})
 	}
 }
+
 /** Fluent body-based proxy factory */
-export function bodyProxy(method: "post" | "put" | "patch") {
+// export function bodyProxy(method: "post" | "put" | "patch") {
+// 	return {
+// 		route: <Route extends string>(url: Route) => ({
+// 			bodyType: <Bdy extends BodyType>() => ({
+// 				returnType: <Ret extends Json>() =>
+// 					async (args: Bdy & Params<Route>) =>
+// 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+// 				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
+// 					async (args: Bdy & Params<Route>) =>
+// 						request[method]({ url, ...parseArgs(url, args, "body"), accept })
+// 			})
+// 		})
+// 	}
+// }
+
+export function bodyProxyFactory(method: "post" | "put" | "patch") {
 	return {
-		route: <Route extends string>(url: Route) => ({
-			bodyType: <Body extends BodyType>() => ({
+		route: <Url extends string>(url: Url) => ({
+			bodyType: <Bdy extends BodyType>() => ({
 				returnType: <Ret extends Json>() =>
-					async (args: Body & Params<Route>) =>
+					async (args: Bdy & Params<Url>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
-				responseType: <Accept extends MIMETypeKey>(accept: Accept) =>
-					async (args: Body & Params<Route>) =>
-						request[method]({ url, ...parseArgs(url, args, "body"), accept })
+				responseType: <Accept extends MIMETypeKey>(accept: Accept) => {
+					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
+						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
+						return async (args: Bdy & Params<Url>) => request[method]({
+							url: urlEffective,
+							...parseArgs(urlEffective, args, "body"),
+							accept
+						})
+					}
+					return Object.assign(factory, { proxy: factory("", {}), method, url })
+				}
 			})
 		})
 	}
@@ -56,6 +121,10 @@ export type QueryProxy<Qry extends Json<string>, Url extends string, Ret, Prm ex
 	(args: Qry & Omit<Params<Url>, keyof Prm>) => Ret
 export type Proxy<QueryBody, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
+export type ProxyFactory<QueryBody, Url extends string, Ret> = { method: Lowercase<Method>, url: Url } & (
+	<BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+		(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
+)
 
 function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & Params<R>, kind: "query"): { query: Q, params: Params<R> }
 function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & Params<R>, kind: "headers"): { headers: H, params: Params<R> }
