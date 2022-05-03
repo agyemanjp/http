@@ -9,9 +9,18 @@ export function queryProxyFactory(method: "get" | "delete") {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Query extends JsonObject<string>>() => ({
-				returnType: <Ret extends Json>() =>
-					async (args: Query & Params<Url>) =>
-						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+				returnType: <Ret extends Json>() => {
+					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
+						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
+						return async (args: Query & Omit<Params<Url>, keyof Prm>) => request[method]<Ret>({
+							url: urlEffective,
+							...parseArgs(urlEffective, args as any, "query"),
+							accept: "Json"
+						})
+					}
+					return Object.assign(factory, { proxy: factory("", {}), method, url })
+				},
+
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) => {
 					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
 						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
@@ -25,9 +34,18 @@ export function queryProxyFactory(method: "get" | "delete") {
 				}
 			}),
 			headersType: <Headers extends JsonObject<string>>() => ({
-				returnType: <Ret extends Json>() =>
-					async (args: Headers & Params<Url>) =>
-						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
+				returnType: <Ret extends Json>() => {
+					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
+						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
+						return async (args: Headers & Omit<Params<Url>, keyof Prm>) => request[method]<Ret>({
+							url: urlEffective,
+							...parseArgs(urlEffective, args as any, "headers"),
+							accept: "Json"
+						})
+					}
+					return Object.assign(factory, { proxy: factory("", {}), method, url })
+				},
+
 				responseType: <Accept extends MIMETypeKey>(accept: Accept) => {
 					const factory = <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) => {
 						const urlEffective = applyParams(`${baseUrl}/${url}`, params)
@@ -43,6 +61,8 @@ export function queryProxyFactory(method: "get" | "delete") {
 		})
 	}
 }
+
+// const xx = queryProxyFactory("get").url("").queryType<{}>().returnType<{}>().
 
 export function bodyProxyFactory(method: "post" | "put" | "patch") {
 	return {
