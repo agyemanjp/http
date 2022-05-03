@@ -351,12 +351,12 @@ export type IdempotentMethod = "GET" | "DELETE" | "PATCH" | "PUT";
 export type BodyMethod = "POST" | "PATCH" | "PUT";
 export type QueryMethod = "GET" | "DELETE";
 
-export type BodyType = Json | JsonArray | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
+export type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
-export interface Json<V extends JsonValue = JsonValue> { [x: string]: V }
+export type Json = JsonObject | JsonArray
+export interface JsonObject<V extends JsonValue = JsonValue> { [x: string]: V }
 export type JsonArray = Array<JsonValue>
-export type JsonValue = null | string | number | boolean | Date | Json | JsonArray
-
+export type JsonValue = null | string | number | boolean | Date | JsonObject | JsonArray
 export type ObjEmpty = { [k in never]: never }
 
 /** Extract object type containing all param args embedded in a URL pattern */

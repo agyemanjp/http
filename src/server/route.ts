@@ -4,8 +4,8 @@
 /* eslint-disable no-shadow */
 import * as express from 'express'
 
-import { BodyProxy, QueryProxy, Proxy, ProxyFactory } from "../proxy"
-import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyParams, Params, ObjEmpty } from "../common"
+import { Proxy, ProxyFactory } from "../proxy"
+import { JsonObject, statusCodes, Method, applyParams, Params, Json } from "../common"
 
 /** Fluent route factory */
 // export const route = {
@@ -21,7 +21,7 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyPar
 // 	return {
 // 		url: <Url extends string>(url: Url) => ({
 // 			bodyType: <Body extends Json>() => ({
-// 				returnType: <Ret extends JsonRet>() => ({
+// 				returnType: <Ret extends Json>() => ({
 // 					handler: (fn: BodyProxy<Body, Url, Promise<Ret>>) => ({
 // 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
 // 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
@@ -42,7 +42,7 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyPar
 // 	return {
 // 		url: <Url extends string>(url: Url) => ({
 // 			queryType: <Query extends Json<string>>() => ({
-// 				returnType: <Ret extends JsonRet>() => ({
+// 				returnType: <Ret extends Json>() => ({
 // 					handler: (fn: QueryProxy<Query, Url, Promise<Ret>>) => ({
 // 						method,
 // 						url,
@@ -56,7 +56,7 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyPar
 // 				})
 // 			}),
 // 			headersType: <Headers extends Json<string>>() => ({
-// 				returnType: <Ret extends JsonRet>() => ({
+// 				returnType: <Ret extends Json>() => ({
 // 					handler: (fn: QueryProxy<Headers, Url, Promise<Ret>>) => ({
 // 						method,
 // 						url,
@@ -74,7 +74,7 @@ import { BodyMethod, Json, QueryMethod, statusCodes, Method, JsonArray, applyPar
 // }
 
 /** Fluent query-based endpoint factory */
-export const router = <Q extends Json<string>, U extends string, R>(proxy: ProxyFactory<Q, U, R>, handlerFn: Proxy<Q, U, Promise<R>>) => ({
+export const router = <Q extends JsonObject<string>, U extends string, R>(proxy: ProxyFactory<Q, U, R>, handlerFn: Proxy<Q, U, Promise<R>>) => ({
 	method: proxy.method,
 	url: proxy.url,
 	handler: jsonHandler(handlerFn, true /* wrap json results */),
@@ -103,7 +103,7 @@ export function jsonHandler<I, O>(fn: (req: I & RequestUrlInfo) => Promise<O>, w
 }
 
 /** Creates a client final route based on a server route */
-export function clientRoute<QuryBdy, M extends Method, Url extends string, bUrl extends string, Prm extends Partial<Params<`${bUrl}/${Url}`>>, Ret extends JsonRet>(
+export function clientRoute<QuryBdy, M extends Method, Url extends string, bUrl extends string, Prm extends Partial<Params<`${bUrl}/${Url}`>>, Ret extends Json>(
 	route: Route<M, Url, QuryBdy, Ret>,
 	baseUrl: bUrl,
 	params: Prm
@@ -117,7 +117,7 @@ export function clientRoute<QuryBdy, M extends Method, Url extends string, bUrl 
 	} as RouteFinal<M, QuryBdy & Omit<Params<`${bUrl}/${Url}`>, keyof Prm>, Ret>
 }
 
-export type Route<M extends Method = Method, Url extends string = string, QueryBody = any, Ret extends JsonRet = JsonRet> = {
+export type Route<M extends Method = Method, Url extends string = string, QueryBody = any, Ret extends Json = Json> = {
 	proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(url: BaseUrl, params: Prm) =>
 		Proxy<QueryBody, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>;
 	handler: express.Handler;
@@ -125,7 +125,7 @@ export type Route<M extends Method = Method, Url extends string = string, QueryB
 	method: Lowercase<M>;
 }
 
-export type RouteFinal<M extends Method = Method, Args = any, Ret extends JsonRet = JsonRet> = {
+export type RouteFinal<M extends Method = Method, Args = any, Ret extends Json = Json> = {
 	proxy: (args: Args) => Promise<Wrap<Ret>>;
 	handler: express.Handler;
 	url: string;
@@ -134,7 +134,6 @@ export type RouteFinal<M extends Method = Method, Args = any, Ret extends JsonRe
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
 type Wrap<T> = ({ data: T } | { error: string })
-type JsonRet = Json | JsonArray | null
 
 /*function createBodyRoute<M extends BodyMethod, P extends string, U extends string, H extends PGRepo>(route: Route<M, U, H>) {
 	return {

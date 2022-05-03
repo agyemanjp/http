@@ -4,12 +4,12 @@
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
 import { trimRight } from "@agyemanjp/standard"
-import { applyParams, MIME_TYPES, JsonArray, Json, BodyType } from "../common"
+import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject } from "../common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 
 export function post<A extends AcceptType = AcceptType>(args: Specific<RequestPOST, A>): Promise<TResponse<A>>
-export function post<Out extends Json = Json>(args: Specific<RequestPOST, "Json">): Promise<Out>
+export function post<Ret extends Json = Json>(args: Specific<RequestPOST, "Json">): Promise<Ret>
 export function post(args: Specific<RequestPOST>) {
 	return __({ ...args, method: "POST" }) as any
 }
@@ -139,8 +139,12 @@ export type RequestPOST<B extends BodyType = BodyType, P extends sObj = sObj> = 
 	body: B
 }
 
-export type RequestArgs<B extends BodyType = BodyType, P extends sObj = sObj, Q extends sObj = sObj> = (
-	RequestGET<P, Q> | RequestDELETE<P, Q> | RequestPOST<B, P> | RequestPUT<B, P> | RequestPATCH<B, P>
+export type RequestArgs<Bdy extends BodyType = BodyType, Prms extends sObj = sObj, Qry extends sObj = sObj> = (
+	RequestGET<Prms, Qry> |
+	RequestDELETE<Prms, Qry> |
+	RequestPOST<Bdy, Prms> |
+	RequestPUT<Bdy, Prms> |
+	RequestPATCH<Bdy, Prms>
 )
 
 type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = AcceptType> = Omit<R, "method"> & { accept: A }
@@ -148,14 +152,13 @@ type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = Accept
 type AcceptType = keyof typeof MIME_TYPES
 
 type TResponse<A extends AcceptType | undefined> = (
-	A extends "Json" ? Json | JsonArray :
-	// A extends "JsonWrapped" ? Wrapped<Json> :
+	A extends "Json" ? Json :
 	A extends "Text" ? string :
 	A extends "Octet" ? Blob :
 	A extends "Binary" ? ArrayBuffer :
 	ReadableStream<Uint8Array> | null
 )
 
-type sObj = Json<string>
+type sObj = JsonObject<string>
 
 

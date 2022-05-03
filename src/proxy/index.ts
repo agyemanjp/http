@@ -1,7 +1,7 @@
 /* eslint-disable fp/no-proxy */
 /* eslint-disable fp/no-mutating-assign */
 import { Obj, pick, keys } from "@agyemanjp/standard"
-import { Params, Json, BodyType, MIME_TYPES, JsonArray, ObjEmpty, Method, applyParams } from "../common"
+import { Params, Json, JsonObject, JsonArray, BodyType, MIME_TYPES, ObjEmpty, Method, applyParams } from "../common"
 import { request } from "../client"
 
 /** Fluent proxy factory */
@@ -40,7 +40,7 @@ import { request } from "../client"
 export function queryProxyFactory(method: "get" | "delete") {
 	return {
 		route: <Url extends string>(url: Url) => ({
-			queryType: <Query extends Json<string>>() => ({
+			queryType: <Query extends JsonObject<string>>() => ({
 				returnType: <Ret extends Json>() =>
 					async (args: Query & Params<Url>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
@@ -56,7 +56,7 @@ export function queryProxyFactory(method: "get" | "delete") {
 					return Object.assign(factory, { proxy: factory("", {}), method, url })
 				}
 			}),
-			headersType: <Headers extends Json<string>>() => ({
+			headersType: <Headers extends JsonObject<string>>() => ({
 				returnType: <Ret extends Json>() =>
 					async (args: Headers & Params<Url>) =>
 						request[method]<Ret>({ url, ...parseArgs(url, args, "body"), accept: "Json" }),
@@ -115,9 +115,9 @@ export function bodyProxyFactory(method: "post" | "put" | "patch") {
 	}
 }
 
-export type BodyProxy<Bdy extends Json | JsonArray, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
+export type BodyProxy<Bdy extends JsonObject | JsonArray, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: Bdy & Omit<Params<Url>, keyof Prm>) => Ret
-export type QueryProxy<Qry extends Json<string>, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
+export type QueryProxy<Qry extends JsonObject<string>, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: Qry & Omit<Params<Url>, keyof Prm>) => Ret
 export type Proxy<QueryBody, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
@@ -126,10 +126,10 @@ export type ProxyFactory<QueryBody, Url extends string, Ret> = { method: Lowerca
 		(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
 )
 
-function parseArgs<R extends string, Q extends Json<string>>(url: R, args: Q & Params<R>, kind: "query"): { query: Q, params: Params<R> }
-function parseArgs<R extends string, H extends Json<string>>(url: R, args: H & Params<R>, kind: "headers"): { headers: H, params: Params<R> }
-function parseArgs<R extends string, B extends Json<string>>(url: R, args: B & Params<R>, kind: "body"): { body: B, params: Params<R> }
-function parseArgs<R extends string, T extends Json<string>>(url: R, args: T & Params<R>, kind: "query" | "headers" | "body") {
+function parseArgs<R extends string, Q extends JsonObject<string>>(url: R, args: Q & Params<R>, kind: "query"): { query: Q, params: Params<R> }
+function parseArgs<R extends string, H extends JsonObject<string>>(url: R, args: H & Params<R>, kind: "headers"): { headers: H, params: Params<R> }
+function parseArgs<R extends string, B extends JsonObject<string>>(url: R, args: B & Params<R>, kind: "body"): { body: B, params: Params<R> }
+function parseArgs<R extends string, T extends JsonObject<string>>(url: R, args: T & Params<R>, kind: "query" | "headers" | "body") {
 	return {
 		[kind]: pick(args, ...keys(args).filter(k => !url.includes(`/:${k}/`))) as any,
 		params: pick(args, ...keys(args).filter(k => url.includes(`/:${k}/`))) as any as Params<R>
