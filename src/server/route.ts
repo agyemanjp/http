@@ -74,7 +74,7 @@ import { JsonObject, statusCodes, Method, applyParams, Params, Json } from "../c
 // }
 
 /** Fluent query-based endpoint factory */
-export const router = <Q extends JsonObject<string>, U extends string, R>(proxy: ProxyFactory<Q, U, R>, handlerFn: Proxy<Q, U, Promise<R>>) => ({
+export const router = <Q extends JsonObject<string>, U extends string, R>(proxy: ProxyFactory<Q, U, Promise<R>>, handlerFn: Proxy<Q, U, Promise<R>>) => ({
 	method: proxy.method,
 	url: proxy.url,
 	handler: jsonHandler(handlerFn, true /* wrap json results */),

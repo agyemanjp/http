@@ -99,10 +99,13 @@ export function bodyProxyFactory(method: "post" | "put" | "patch") {
 
 export type BodyProxy<Bdy extends JsonObject | JsonArray, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: Bdy & Omit<Params<Url>, keyof Prm>) => Ret
+
 export type QueryProxy<Qry extends JsonObject<string>, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: Qry & Omit<Params<Url>, keyof Prm>) => Ret
+
 export type Proxy<QueryBody, Url extends string, Ret, Prm extends Partial<Params<Url>> = ObjEmpty> =
 	(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
+
 export type ProxyFactory<QueryBody, Url extends string, Ret> = { method: Lowercase<Method>, url: Url } & (
 	<BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
 		(args: QueryBody & Omit<Params<Url>, keyof Prm>) => Ret
