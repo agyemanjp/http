@@ -51,11 +51,12 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 								})
 							}
 							// eslint-disable-next-line fp/no-mutating-assign
-							return Object.assign(proxyFactory, {
+							return {
+								proxyFactory,
 								proxy: proxyFactory("", {}),
 								method,
 								url
-							}) as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
+							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
 						}
 					}),
 					responseType: <Accept extends MIMETypeKey>(accept: Accept) => ({
@@ -93,11 +94,12 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 								})
 							}
 							// eslint-disable-next-line fp/no-mutating-assign
-							return Object.assign(proxyFactory, {
+							return {
+								proxyFactory,
 								proxy: proxyFactory("", {}),
 								method,
 								url
-							}) as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
+							} as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
 						}
 					})
 				})
@@ -147,11 +149,12 @@ export function queryFactory(method: "get" | "delete") {
 								})
 							}
 							// eslint-disable-next-line fp/no-mutating-assign
-							return Object.assign(proxyFactory, {
+							return {
+								proxyFactory,
 								proxy: proxyFactory("", {}),
 								method,
 								url
-							}) as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
+							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
 						}
 					}),
 					responseType: <Accept extends MIMETypeKey>(accept: Accept) => ({
@@ -189,11 +192,12 @@ export function queryFactory(method: "get" | "delete") {
 								})
 							}
 							// eslint-disable-next-line fp/no-mutating-assign
-							return Object.assign(proxyFactory, {
+							return {
+								proxyFactory,
 								proxy: proxyFactory("", {}),
 								method,
 								url
-							}) as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
+							} as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
 						}
 					})
 				})
@@ -244,14 +248,14 @@ export function clientRoute<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 	}
 }
 
-export type RouteObject<Mthd extends HttpMethod, QryHdrsBdyParams extends Json, Ret extends ResponseDataType, Ctx = any> = {
+export type RouteObject<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType, Ctx = any> = {
 	url: string;
 	method: Lowercase<Mthd>;
 	proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
 	proxyFactory: <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
 	handlerFactory: (ctx: Ctx) => express.Handler;
 }
-export type RouteTuple<Mthd extends HttpMethod, QryHdrsBdyParams extends Json, Ret extends ResponseDataType, Ctx = any> = [
+export type RouteTuple<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType, Ctx = any> = [
 	method: Lowercase<Mthd>,
 	url: string,
 	proxy: (args: QryHdrsBdyParams) => Promise<Ret>,
@@ -269,13 +273,13 @@ export type ProxyFactory<Url extends string, QryBdyHdrs extends Json, Ret extend
 	<BaseUrl extends string, Args extends Partial<ParamsObj<Url> & QryBdyHdrs>>(baseUrl: BaseUrl, argsInjected: Args) =>
 		(args: Omit<ParamsObj<Url> & QryBdyHdrs, keyof Args>) => Promise<Ret>
 )
-export type ProxyFactoryAugmented<Url extends string, QryBdyHdrs extends Json, Ret extends ResponseDataType> = (
-	ProxyFactory<Url, QryBdyHdrs, Ret> & {
-		proxy: ReturnType<ProxyFactory<Url, QryBdyHdrs, Ret>>
-		method: Lowercase<HttpMethod>,
-		url: Url
-	}
-)
+export type ProxyFactoryAugmented<Url extends string, QryBdyHdrs extends Json, Ret extends ResponseDataType> = {
+	proxyFactory: ProxyFactory<Url, QryBdyHdrs, Ret>;
+	proxy: ReturnType<ProxyFactory<Url, QryBdyHdrs, Ret>>;
+	method: Lowercase<HttpMethod>;
+	url: Url;
+}
+
 
 /** Parse various categories of properties out of a query arguments object 
  * By conention header property names must be prefixed with an underscore _
