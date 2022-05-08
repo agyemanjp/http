@@ -11,14 +11,14 @@ import { request, TResponse, ResponseDataType } from './client'
 
 
 /** Fluent body route factory */
-export function bodyRouteFactoryFluent(method: "post" | "put" | "patch") {
+export function bodyFactory(method: "post" | "put" | "patch") {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Bdy extends Json>() => ({
 				headersType: <Hdrs extends sJson>() => ({
 					returnType: <Ret extends Json>() => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, Wrap<Ret>>) => {
+						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
 							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Wrap<Ret>, Ctx>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
@@ -107,14 +107,14 @@ export function bodyRouteFactoryFluent(method: "post" | "put" | "patch") {
 }
 
 /** Fluent query route factory */
-export function queryRouteFactoryFluent(method: "get" | "delete") {
+export function queryFactory(method: "get" | "delete") {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Qry extends sJson>() => ({
 				headersType: <Hdrs extends sJson>() => ({
 					returnType: <Ret extends Json>() => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, Wrap<Ret>>) => {
+						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
 							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Wrap<Ret>, Ctx>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
