@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { TypeAssert, Tuple, Obj, last, reduce } from '@agyemanjp/standard'
+import { TypeAssert, entries, Obj, last, reduce } from '@agyemanjp/standard'
 
-function entries<O extends Obj>(obj: O) {
+/*function entries<O extends Obj>(obj: O) {
 	return Object.entries(obj) as Tuple<keyof O, O[keyof O]>[]
-}
+}*/
 
-export function applyParams<Url extends string, P extends Partial<Params<Url>>>(urlWithParams: Url, params: P): string {
-
+export function applyParams(urlWithParams: string, params: Obj): string {
 	return last(reduce(
 		entries(params), // data
 		urlWithParams as string, // initial
-		(url, [paramKey, paramVal]) => {
+		(url, [paramKey, paramVal]) => { // ToDo: Fix potential bug in with replacement below, use regex
 			return url.replace(`/:${paramKey}/`, String(paramVal)) // reducer
 		}
 	))
@@ -360,17 +359,19 @@ export type JsonValue = null | string | number | boolean | Date | JsonObject | J
 export type ObjEmpty = { [k in never]: never }
 
 /** Extract object type containing all param args embedded in a URL pattern */
-export type Params<RoutePath extends string> = (
-	string extends RoutePath
+export type ParamsObj<Url extends string> = (
+	string extends Url
 	? Obj<string>
-	: RoutePath extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof Params<Rest>]: string }
-	: RoutePath extends `${infer Start}:${infer Param}`
+	: Url extends `${infer Start}:${infer Param}/${infer Rest}`
+	? { [k in Param | keyof ParamsObj<Rest>]: string }
+	: Url extends `${infer Start}:${infer Param}`
 	? { [k in Param]: string }
 	: ObjEmpty
 )
+
+
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
-const test_extract_route_params: TypeAssert<Params<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
+const test_extract_route_params: TypeAssert<ParamsObj<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
 // type TTT = ExtractParams<"auth.com/:cat/api/:app/verify"
 
 

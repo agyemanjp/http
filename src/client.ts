@@ -4,7 +4,7 @@
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
 import { trimRight } from "@agyemanjp/standard"
-import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject } from "../common"
+import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject } from "./common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 
@@ -151,13 +151,15 @@ type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = Accept
 
 type AcceptType = keyof typeof MIME_TYPES
 
-type TResponse<A extends AcceptType | undefined> = (
+export type TResponse<A extends AcceptType | undefined> = (
 	A extends "Json" ? Json :
 	A extends "Text" ? string :
 	A extends "Octet" ? Blob :
 	A extends "Binary" ? ArrayBuffer :
-	ReadableStream<Uint8Array> | null
+	ReadableStream<Uint8Array> /*| null*/
 )
+
+export type ResponseDataType = Json | string | Blob | ArrayBuffer | ReadableStream<Uint8Array>
 
 type sObj = JsonObject<string>
 

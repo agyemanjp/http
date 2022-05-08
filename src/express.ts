@@ -4,11 +4,13 @@ import * as cuid from 'cuid'
 import * as express from 'express'
 import { Obj } from '@agyemanjp/standard/utility'
 
-import { Method } from '../common'
+import { Json, Method } from './common'
+import { RouteObject, RouteTuple } from './route-proxy'
+import { ResponseDataType } from './client'
 
 
 /** Start express server */
-export function startServer(args: ServerArgs) {
+export function startServer<Ctx>(args: ServerArgs<Ctx>) {
 	const app = express()
 
 	// Set up routes
@@ -17,7 +19,7 @@ export function startServer(args: ServerArgs) {
 			? app.use(route)
 			: Array.isArray(route)
 				? app[route[0]](route[1], route[2])
-				: app[route.method](route.url, route.handler)
+				: app[route.method](route.url, route.handlerFactory(args.context))
 	)
 
 	const sockets: Obj<Net.Socket> = {}
@@ -61,20 +63,13 @@ export function startServer(args: ServerArgs) {
 }
 
 
-type ServerArgs = {
+type ServerArgs<Ctx = void> = {
 	name: string
 	routes: (
-		{
-			handler: express.Handler
-			method: Lowercase<Method>,
-			url: string,
-		}
-		| [
-			method: Lowercase<Method>,
-			url: string,
-			handler: express.Handler
-		]
-		| express.Handler
+		RouteObject<Method, Json, ResponseDataType, Ctx> |
+		RouteTuple<Method, Json, ResponseDataType, Ctx> |
+		express.Handler
 	)[],
-	port: number | string
+	port: number | string,
+	context: Ctx
 }
