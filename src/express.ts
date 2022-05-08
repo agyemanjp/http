@@ -66,8 +66,8 @@ export function startServer<Ctx>(args: ServerArgs<Ctx>) {
 type ServerArgs<Ctx = void> = {
 	name: string
 	routes: (
-		RouteObject<Method, Json, ResponseDataType, Ctx> |
-		RouteTuple<Method, Json, ResponseDataType, Ctx> |
+		RouteObject<Method, any, ResponseDataType, Ctx> |
+		RouteTuple<Method, any, ResponseDataType, Ctx> |
 		express.Handler
 	)[],
 	port: number | string,
