@@ -6,7 +6,7 @@
 import * as express from 'express'
 import { keys, Obj, pick } from '@agyemanjp/standard'
 
-import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, MIME_TYPES } from "./common"
+import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, MIME_TYPES, AcceptType } from "./common"
 import { request, TResponse, ResponseDataType } from './client'
 
 
@@ -16,7 +16,7 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Bdy extends Json>() => ({
 				headersType: <Hdrs extends sJson>() => ({
-					returnType: <Ret extends Json>() => ({
+					returnType: <Ret extends Json | null>() => ({
 						/** create a route */
 						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
@@ -59,7 +59,7 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
 						}
 					}),
-					responseType: <Accept extends MIMETypeKey>(accept: Accept) => ({
+					responseType: <Accept extends AcceptType>(accept: Accept) => ({
 						/** create a route */
 						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, TResponse<Accept>>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
@@ -114,7 +114,7 @@ export function queryFactory(method: "get" | "delete") {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Qry extends sJson>() => ({
 				headersType: <Hdrs extends sJson>() => ({
-					returnType: <Ret extends Json>() => ({
+					returnType: <Ret extends Json | null>() => ({
 						/** create a route */
 						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
@@ -157,7 +157,7 @@ export function queryFactory(method: "get" | "delete") {
 							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
 						}
 					}),
-					responseType: <Accept extends MIMETypeKey>(accept: Accept) => ({
+					responseType: <Accept extends AcceptType>(accept: Accept) => ({
 						/** create a route */
 						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, TResponse<Accept>>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
@@ -305,7 +305,7 @@ function parseBodyArgs(url: string, _args: Json) {
 
 type RequestUrlInfo = { url: string, baseUrl: string, originalUrl: string }
 type Wrap<T> = ({ data: T } | { error: string })
-type MIMETypeKey = keyof typeof MIME_TYPES
+// type MIMETypeKey = keyof typeof MIME_TYPES
 type sJson = JsonObject<string>
 
 

@@ -4,7 +4,7 @@
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
 import { trimRight } from "@agyemanjp/standard"
-import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject } from "./common"
+import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject, AcceptType } from "./common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
 
@@ -110,7 +110,7 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 
 export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
 	url: string;
-	accept?: keyof typeof MIME_TYPES;
+	accept?: keyof typeof MIME_TYPES | void;
 	headers?: sObj;
 }
 export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
@@ -149,9 +149,8 @@ export type RequestArgs<Bdy extends BodyType = BodyType, Prms extends sObj = sOb
 
 type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = AcceptType> = Omit<R, "method"> & { accept: A }
 
-type AcceptType = keyof typeof MIME_TYPES
-
-export type TResponse<A extends AcceptType | undefined> = (
+export type TResponse<A extends AcceptType> = (
+	A extends void ? void :
 	A extends "Json" ? Json :
 	A extends "Text" ? string :
 	A extends "Octet" ? Blob :
@@ -159,7 +158,7 @@ export type TResponse<A extends AcceptType | undefined> = (
 	ReadableStream<Uint8Array> /*| null*/
 )
 
-export type ResponseDataType = Json | string | Blob | ArrayBuffer | ReadableStream<Uint8Array>
+export type ResponseDataType = void | null | Json | string | Blob | ArrayBuffer | ReadableStream<Uint8Array>
 
 type sObj = JsonObject<string>
 

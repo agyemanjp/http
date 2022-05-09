@@ -369,6 +369,7 @@ export type ParamsObj<Url extends string> = (
 	: ObjEmpty
 )
 
+export type AcceptType = void | keyof typeof MIME_TYPES
 
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
 const test_extract_route_params: TypeAssert<ParamsObj<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
