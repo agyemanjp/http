@@ -18,7 +18,7 @@ export function startServer<Ctx>(args: ServerArgs<Ctx>) {
 		typeof route === "function"
 			? app.use(route)
 			: Array.isArray(route)
-				? app[route[0]](route[1], route[2])
+				? app[route[0]](route[1], route[4](args.context))
 				: app[route.method](route.url, route.handlerFactory(args.context))
 	)
 

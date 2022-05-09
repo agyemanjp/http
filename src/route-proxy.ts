@@ -6,7 +6,7 @@
 import * as express from 'express'
 import { keys, Obj, pick } from '@agyemanjp/standard'
 
-import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, MIME_TYPES, AcceptType } from "./common"
+import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType } from "./common"
 import { request, TResponse, ResponseDataType } from './client'
 
 
