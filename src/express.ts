@@ -66,8 +66,8 @@ export function startServer(args: ServerArgs) {
 type ServerArgs = {
 	name: string
 	routes: (
-		RouteObject<Method, any, ResponseDataType> |
-		RouteTuple<Method, any, ResponseDataType> |
+		{ method: RouteObject["method"]; url: RouteObject["url"]; handler: RouteObject["handler"]; } |
+		[method: RouteObject["method"], url: RouteObject["url"], handler: RouteObject["handler"]] |
 		express.Handler
 	)[],
 	port: number | string,
