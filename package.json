@@ -27,7 +27,7 @@
 	},
 	"homepage": "https://github.com/agyemanjp/http.js#readme",
 	"dependencies": {
-		"@agyemanjp/standard": "^4.0.1",
+		"@agyemanjp/standard": "^4.0.3",
 		"cross-fetch": "^3.1.5",
 		"cuid": "^2.1.8"
 	},
