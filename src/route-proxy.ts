@@ -20,14 +20,20 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 						/** create a route */
 						handler: (handlerFn: BodyProxy<Url, Bdy, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Wrap<Ret>>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Ret>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
-									url: urlEffective,
-									...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
-									accept: "Json"
-								})
+								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) =>
+									request[method]<Wrap<Ret>>({
+										url: urlEffective,
+										...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
+										accept: "Json"
+									}).then(wrapped => {
+										if ("data" in wrapped)
+											return wrapped.data
+										else
+											throw wrapped.error
+									})
 								return proxy
 							}
 							return {
@@ -42,12 +48,17 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 						/** create a proxy */
 						proxy: () => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
-							const proxyFactory: ProxyFactory<Url, Args, Wrap<Ret>> = (baseUrl, argsInjected) => {
+							const proxyFactory: ProxyFactory<Url, Args, Ret> = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 									url: urlEffective,
 									...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
 									accept: "Json"
+								}).then(wrapped => {
+									if ("data" in wrapped)
+										return wrapped.data
+									else
+										throw wrapped.error
 								})
 							}
 							// eslint-disable-next-line fp/no-mutating-assign
@@ -56,7 +67,7 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 								proxy: proxyFactory("", {}),
 								method,
 								url
-							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
+							} as ProxyFactoryAugmented<Url, Args, Ret>
 						}
 					}),
 					responseType: <Accept extends AcceptType>(accept: Accept) => ({
@@ -118,13 +129,18 @@ export function queryFactory(method: "get" | "delete") {
 						/** create a route */
 						handler: (handlerFn: QueryProxy<Url, Qry, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Wrap<Ret>>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Ret>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 									url: urlEffective,
 									...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
 									accept: "Json"
+								}).then(wrapped => {
+									if ("data" in wrapped)
+										return wrapped.data
+									else
+										throw wrapped.error
 								})
 								return proxy
 							}
