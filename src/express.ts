@@ -10,7 +10,7 @@ import { ResponseDataType } from './client'
 
 
 /** Start express server */
-export function startServer<Ctx>(args: ServerArgs<Ctx>) {
+export function startServer(args: ServerArgs) {
 	const app = express()
 
 	// Set up routes
@@ -18,8 +18,8 @@ export function startServer<Ctx>(args: ServerArgs<Ctx>) {
 		typeof route === "function"
 			? app.use(route)
 			: Array.isArray(route)
-				? app[route[0]](route[1], route[4](args.context))
-				: app[route.method](route.url, route.handlerFactory(args.context))
+				? app[route[0]](route[1], route[2])
+				: app[route.method](route.url, route.handler)
 	)
 
 	const sockets: Obj<Net.Socket> = {}
@@ -63,13 +63,12 @@ export function startServer<Ctx>(args: ServerArgs<Ctx>) {
 }
 
 
-type ServerArgs<Ctx = void> = {
+type ServerArgs = {
 	name: string
 	routes: (
-		RouteObject<Method, any, ResponseDataType, Ctx> |
-		RouteTuple<Method, any, ResponseDataType, Ctx> |
+		RouteObject<Method, any, ResponseDataType> |
+		RouteTuple<Method, any, ResponseDataType> |
 		express.Handler
 	)[],
 	port: number | string,
-	context: Ctx
 }

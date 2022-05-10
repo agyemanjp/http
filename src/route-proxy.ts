@@ -18,9 +18,9 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 				headersType: <Hdrs extends sJson>() => ({
 					returnType: <Ret extends Json | null>() => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, Ret>) => {
+						handler: (handlerFn: BodyProxy<Url, Bdy, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Wrap<Ret>, Ctx>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Wrap<Ret>>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
@@ -33,7 +33,7 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 							return {
 								proxyFactory,
 								proxy: proxyFactory("", {}),
-								handlerFactory: (ctx) => jsonHandler(handlerFactory(ctx), true),
+								handler: jsonHandler(handlerFn, true),
 								method,
 								url
 							} as Route
@@ -61,9 +61,9 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 					}),
 					responseType: <Accept extends AcceptType>(accept: Accept) => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => BodyProxy<Url, Bdy, Hdrs, TResponse<Accept>>) => {
+						handler: (handlerFn: BodyProxy<Url, Bdy, Hdrs, TResponse<Accept>>) => {
 							type Args = ParamsObj<Url> & Bdy & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, TResponse<Accept>, Ctx>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, TResponse<Accept>>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
@@ -76,7 +76,7 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 							return {
 								proxyFactory,
 								proxy: proxyFactory("", {}),
-								handlerFactory: (ctx) => jsonHandler(handlerFactory(ctx), true),
+								handler: jsonHandler(handlerFn, true),
 								method,
 								url
 							} as Route
@@ -116,9 +116,9 @@ export function queryFactory(method: "get" | "delete") {
 				headersType: <Hdrs extends sJson>() => ({
 					returnType: <Ret extends Json | null>() => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, Ret>) => {
+						handler: (handlerFn: QueryProxy<Url, Qry, Hdrs, Ret>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Wrap<Ret>, Ctx>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Wrap<Ret>>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
@@ -131,7 +131,7 @@ export function queryFactory(method: "get" | "delete") {
 							return {
 								proxyFactory,
 								proxy: proxyFactory("", {}),
-								handlerFactory: (ctx) => jsonHandler(handlerFactory(ctx), true),
+								handler: jsonHandler(handlerFn, true),
 								method,
 								url
 							} as Route
@@ -159,9 +159,9 @@ export function queryFactory(method: "get" | "delete") {
 					}),
 					responseType: <Accept extends AcceptType>(accept: Accept) => ({
 						/** create a route */
-						handler: <Ctx>(handlerFactory: (context: Ctx) => QueryProxy<Url, Qry, Hdrs, TResponse<Accept>>) => {
+						handler: (handlerFn: QueryProxy<Url, Qry, Hdrs, TResponse<Accept>>) => {
 							type Args = ParamsObj<Url> & Qry & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, TResponse<Accept>, Ctx>
+							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, TResponse<Accept>>
 							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
 								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
 								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
@@ -174,7 +174,7 @@ export function queryFactory(method: "get" | "delete") {
 							return {
 								proxyFactory,
 								proxy: proxyFactory("", {}),
-								handlerFactory: (ctx) => jsonHandler(handlerFactory(ctx), true),
+								handler: jsonHandler(handlerFn, true),
 								method,
 								url
 							} as Route
@@ -244,23 +244,23 @@ export function clientRoute<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 			const mergedArgs = { ...argsNew, ...injectedArgs } as Partial<QryHdrsBdyParams>
 			return route.proxyFactory(`${baseUrlNew}/${baseUrl}`, mergedArgs)
 		},
-		handlerFactory: () => jsonHandler(proxy)
+		handler: () => jsonHandler(proxy)
 	}
 }
 
-export type RouteObject<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType, Ctx = any> = {
+export type RouteObject<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType> = {
 	url: string;
 	method: Lowercase<Mthd>;
+	handler: express.Handler;
 	proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
 	proxyFactory: <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
-	handlerFactory: (ctx: Ctx) => express.Handler;
 }
-export type RouteTuple<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType, Ctx = any> = [
+export type RouteTuple<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType> = [
 	method: Lowercase<Mthd>,
 	url: string,
+	handler: express.Handler,
 	proxy: (args: QryHdrsBdyParams) => Promise<Ret>,
 	proxyFactory: <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>,
-	handlerFactory: (ctx: Ctx) => express.Handler
 ]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
@@ -433,7 +433,6 @@ export function bodyProxyFactory(method: "post" | "put" | "patch") {
 	})
 }*/
 
-
 // const proxyGet = proxy.get.route("/projects/:api").queryType<{ category: string }>().responseType("Text")
 // const g = proxyGet({ category: "cat", api: "nxthaus" })
 // const proxyPost = proxy.post.route("/projects/:api").bodyType<{ category: string }>().returnType<{ x: number }>()
@@ -584,7 +583,6 @@ type User = {
 }
 */
 
-
 /** Fluent route factory */
 /*export const route = {
 	get: queryRoute("get"),
@@ -595,58 +593,58 @@ type User = {
 }*/
 
 // /** Fluent body-based route factory */
-// export function bodyRoute<M extends Lowercase<BodyMethod>>(method: M) {
-// 	return {
-// 		url: <Url extends string>(url: Url) => ({
-// 			bodyType: <Body extends Json>() => ({
-// 				returnType: <Ret extends Json>() => ({
-// 					handler: (fn: BodyProxy<Body, Url, Promise<Ret>>) => ({
-// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-// 							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
-// 								.route(applyParams(`${baseUrl}/${url}`, params))
-// 								.bodyType<Body>()
-// 								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>,
-// 						handler: jsonHandler(fn, true /* wrap json results */),
-// 						url,
-// 						method,
-// 					})
-// 				})
-// 			})
-// 		})
-// 	}
-// }
-// /** Fluent query-based endpoint factory */
-// export function queryRoute<M extends Lowercase<QueryMethod>>(method: M) {
-// 	return {
-// 		url: <Url extends string>(url: Url) => ({
-// 			queryType: <Query extends Json<string>>() => ({
-// 				returnType: <Ret extends Json>() => ({
-// 					handler: (fn: QueryProxy<Query, Url, Promise<Ret>>) => ({
-// 						method,
-// 						url,
-// 						handler: jsonHandler(fn, true /* wrap json results */),
-// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-// 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-// 								.route(applyParams(`${baseUrl}/${url}`, params))
-// 								.queryType<Query>()
-// 								.returnType<Wrap<Ret>>() as QueryProxy<Query, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
-// 					})
-// 				})
-// 			}),
-// 			headersType: <Headers extends Json<string>>() => ({
-// 				returnType: <Ret extends Json>() => ({
-// 					handler: (fn: QueryProxy<Headers, Url, Promise<Ret>>) => ({
-// 						method,
-// 						url,
-// 						handler: jsonHandler(fn, true /* wrap json results */),
-// 						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
-// 							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
-// 								.route(applyParams(`${baseUrl}/${url}`, params))
-// 								.headersType<Headers>()
-// 								.returnType<Wrap<Ret>>() as QueryProxy<Headers, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
-// 					})
-// 				})
-// 			})
-// 		})
-// 	}
-// }
+/*export function bodyRoute<M extends Lowercase<BodyMethod>>(method: M) {
+	return {
+		url: <Url extends string>(url: Url) => ({
+			bodyType: <Body extends Json>() => ({
+				returnType: <Ret extends Json>() => ({
+					handler: (fn: BodyProxy<Body, Url, Promise<Ret>>) => ({
+						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+							proxy[method.toLowerCase() as Lowercase<BodyMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.bodyType<Body>()
+								.returnType<Wrap<Ret>>() as BodyProxy<Body, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>,
+						handler: jsonHandler(fn, true),
+						url,
+						method,
+					})
+				})
+			})
+		})
+	}
+}*/
+/** Fluent query-based endpoint factory */
+/*export function queryRoute<M extends Lowercase<QueryMethod>>(method: M) {
+	return {
+		url: <Url extends string>(url: Url) => ({
+			queryType: <Query extends Json<string>>() => ({
+				returnType: <Ret extends Json>() => ({
+					handler: (fn: QueryProxy<Query, Url, Promise<Ret>>) => ({
+						method,
+						url,
+						handler: jsonHandler(fn, true ),
+						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.queryType<Query>()
+								.returnType<Wrap<Ret>>() as QueryProxy<Query, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
+					})
+				})
+			}),
+			headersType: <Headers extends Json<string>>() => ({
+				returnType: <Ret extends Json>() => ({
+					handler: (fn: QueryProxy<Headers, Url, Promise<Ret>>) => ({
+						method,
+						url,
+						handler: jsonHandler(fn, true),
+						proxyFactory: <BaseUrl extends string, Prm extends Partial<Params<`${BaseUrl}/${Url}`>>>(baseUrl: BaseUrl, params: Prm) =>
+							proxy[method.toLowerCase() as Lowercase<QueryMethod>]
+								.route(applyParams(`${baseUrl}/${url}`, params))
+								.headersType<Headers>()
+								.returnType<Wrap<Ret>>() as QueryProxy<Headers, `${BaseUrl}/${Url}`, Promise<Wrap<Ret>>, Prm>
+					})
+				})
+			})
+		})
+	}
+}*/
