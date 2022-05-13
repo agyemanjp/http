@@ -115,12 +115,13 @@ export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
 }
 export type RequestGET<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
 	method: "GET";
-	query?: Q;
+	query: Q;
 	params?: P;
+	// body:void
 }
 export type RequestDELETE<P extends sObj = sObj, Q extends sObj = sObj> = RequestBase & {
 	method: "DELETE";
-	query?: Q;
+	query: Q;
 	params?: P;
 }
 export type RequestPUT<B extends BodyType = BodyType, P extends sObj = sObj> = RequestBase & {

@@ -6,113 +6,57 @@
 import * as express from 'express'
 import { keys, Obj, pick } from '@agyemanjp/standard'
 
-import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType } from "./common"
+import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType, BodyMethod, QueryMethod } from "./common"
 import { request, TResponse, ResponseDataType } from './client'
 
 
 /** Fluent body route factory */
-export function bodyFactory(method: "post" | "put" | "patch") {
+export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			bodyType: <Bdy extends Json>() => ({
 				headersType: <Hdrs extends sJson>() => ({
-					returnType: <Ret extends Json | null>() => ({
-						/** create a route */
-						handler: (handlerFn: BodyProxy<Url, Bdy, Hdrs, Ret>) => {
-							type Args = ParamsObj<Url> & Bdy & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, Ret>
-							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) =>
-									request[method]<Wrap<Ret>>({
-										url: urlEffective,
-										...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
-										accept: "Json"
-									}).then(wrapped => {
-										if ("data" in wrapped)
-											return wrapped.data
-										else
-											throw wrapped.error
-									})
-								return proxy
-							}
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								handler: jsonHandler(handlerFn, true),
-								method,
-								url
-							} as Route
-						},
-
-						/** create a proxy */
-						proxy: () => {
-							type Args = ParamsObj<Url> & Bdy & Hdrs
-							const proxyFactory: ProxyFactory<Url, Args, Ret> = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
-									url: urlEffective,
-									...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
-									accept: "Json"
-								}).then(wrapped => {
-									if ("data" in wrapped)
-										return wrapped.data
-									else
-										throw wrapped.error
-								})
-							}
-							// eslint-disable-next-line fp/no-mutating-assign
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								method,
-								url
-							} as ProxyFactoryAugmented<Url, Args, Ret>
+					returnType: <Ret extends Json | null>() => {
+						type Args = ParamsObj<Url> & Bdy & Hdrs
+						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
+							const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
+							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
+								url: urlEffective,
+								...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
+								accept: "Json"
+							}).then(wrapped => {
+								if ("data" in wrapped)
+									return wrapped.data
+								else
+									throw wrapped.error
+							})
 						}
-					}),
-					responseType: <Accept extends AcceptType>(accept: Accept) => ({
-						/** create a route */
-						handler: (handlerFn: BodyProxy<Url, Bdy, Hdrs, TResponse<Accept>>) => {
-							type Args = ParamsObj<Url> & Bdy & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Bdy & Hdrs, TResponse<Accept>>
-							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
-									url: urlEffective,
-									...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
-									accept
-								})
-								return proxy
-							}
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								handler: jsonHandler(handlerFn, true),
-								method,
-								url
-							} as Route
-						},
-
-						/** create a proxy */
-						proxy: () => {
-							type Args = ParamsObj<Url> & Bdy & Hdrs
-							const proxyFactory: ProxyFactory<Url, Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
-									url: urlEffective,
-									...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
-									accept
-								})
-							}
-							// eslint-disable-next-line fp/no-mutating-assign
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								method,
-								url
-							} as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
+						return {
+							proxyFactory,
+							proxy: proxyFactory("", {}),
+							method,
+							url,
+							route: (handlerFn) => jsonHandler(handlerFn, true)
+						} as ProxyFactoryAugmented<Args, Ret, M>
+					},
+					responseType: <Accept extends AcceptType>(accept: Accept) => {
+						type Args = ParamsObj<Url> & Bdy & Hdrs
+						const proxyFactory: ProxyFactory<Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
+							const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
+							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
+								url: urlEffective,
+								...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
+								accept
+							})
 						}
-					})
+						return {
+							proxyFactory,
+							proxy: proxyFactory("", {}),
+							method,
+							url,
+							route: (handlerFn) => jsonHandler(handlerFn, true)
+						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
+					}
 				})
 			})
 		})
@@ -120,102 +64,52 @@ export function bodyFactory(method: "post" | "put" | "patch") {
 }
 
 /** Fluent query route factory */
-export function queryFactory(method: "get" | "delete") {
+export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 	return {
 		url: <Url extends string>(url: Url) => ({
 			queryType: <Qry extends sJson>() => ({
 				headersType: <Hdrs extends sJson>() => ({
-					returnType: <Ret extends Json | null>() => ({
-						/** create a route */
-						handler: (handlerFn: QueryProxy<Url, Qry, Hdrs, Ret>) => {
-							type Args = ParamsObj<Url> & Qry & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, Ret>
-							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
-									url: urlEffective,
-									...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
-									accept: "Json"
-								}).then(wrapped => {
-									if ("data" in wrapped)
-										return wrapped.data
-									else
-										throw wrapped.error
-								})
-								return proxy
-							}
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								handler: jsonHandler(handlerFn, true),
-								method,
-								url
-							} as Route
-						},
-
-						/** create a proxy */
-						proxy: () => {
-							type Args = ParamsObj<Url> & Qry & Hdrs
-							const proxyFactory: ProxyFactory<Url, Args, Wrap<Ret>> = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
-									url: urlEffective,
-									...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
-									accept: "Json"
-								})
-							}
-							// eslint-disable-next-line fp/no-mutating-assign
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								method,
-								url
-							} as ProxyFactoryAugmented<Url, Args, Wrap<Ret>>
+					returnType: <Ret extends Json | null>() => {
+						type Args = ParamsObj<Url> & Qry & Hdrs
+						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
+							const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
+							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
+								url: urlEffective,
+								...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
+								accept: "Json"
+							}).then(wrapped => {
+								if ("data" in wrapped)
+									return wrapped.data
+								else
+									throw wrapped.error
+							})
 						}
-					}),
-					responseType: <Accept extends AcceptType>(accept: Accept) => ({
-						/** create a route */
-						handler: (handlerFn: QueryProxy<Url, Qry, Hdrs, TResponse<Accept>>) => {
-							type Args = ParamsObj<Url> & Qry & Hdrs
-							type Route = RouteObject<Uppercase<typeof method>, ParamsObj<Url> & Qry & Hdrs, TResponse<Accept>>
-							const proxyFactory: Route["proxyFactory"] = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								const proxy = async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
-									url: urlEffective,
-									...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
-									accept
-								})
-								return proxy
-							}
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								handler: jsonHandler(handlerFn, true),
-								method,
-								url
-							} as Route
-						},
-
-						/** create a proxy */
-						proxy: () => {
-							type Args = ParamsObj<Url> & Qry & Hdrs
-							const proxyFactory: ProxyFactory<Url, Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
-								const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
-								return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
-									url: urlEffective,
-									...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
-									accept
-								})
-							}
-							// eslint-disable-next-line fp/no-mutating-assign
-							return {
-								proxyFactory,
-								proxy: proxyFactory("", {}),
-								method,
-								url
-							} as ProxyFactoryAugmented<Url, Args, TResponse<Accept>>
+						return {
+							proxyFactory,
+							proxy: proxyFactory("", {}),
+							method,
+							url,
+							route: (handlerFn) => jsonHandler(handlerFn, true)
+						} as ProxyFactoryAugmented<Args, Ret, M>
+					},
+					responseType: <Accept extends AcceptType>(accept: Accept) => {
+						type Args = ParamsObj<Url> & Qry & Hdrs
+						const proxyFactory: ProxyFactory<Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
+							const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
+							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
+								url: urlEffective,
+								...parseQueryArgs(urlEffective, { ...args, ...argsInjected }),
+								accept
+							})
 						}
-					})
+						return {
+							proxyFactory,
+							proxy: proxyFactory("", {}),
+							method,
+							url,
+							route: (handlerFn) => jsonHandler(handlerFn, true)
+						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
+					}
 				})
 			})
 		})
@@ -269,7 +163,8 @@ export type RouteObject<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams e
 	method: Lowercase<Mthd>;
 	handler: express.Handler;
 	proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
-	proxyFactory: <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
+	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
+	// <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
 }
 export type RouteTuple<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType> = [
 	method: Lowercase<Mthd>,
@@ -285,17 +180,22 @@ export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson
 export type BodyProxy<Url extends string, Bdy extends Json, Hdrs extends sJson, Ret extends ResponseDataType> = (
 	(args: ParamsObj<Url> & Bdy & Hdrs) => Promise<Ret>
 )
-export type ProxyFactory<Url extends string, QryBdyHdrs extends Json, Ret extends ResponseDataType> = (
-	<BaseUrl extends string, Args extends Partial<ParamsObj<Url> & QryBdyHdrs>>(baseUrl: BaseUrl, argsInjected: Args) =>
-		(args: Omit<ParamsObj<Url> & QryBdyHdrs, keyof Args>) => Promise<Ret>
-)
-export type ProxyFactoryAugmented<Url extends string, QryBdyHdrs extends Json, Ret extends ResponseDataType> = {
-	proxyFactory: ProxyFactory<Url, QryBdyHdrs, Ret>;
-	proxy: ReturnType<ProxyFactory<Url, QryBdyHdrs, Ret>>;
-	method: Lowercase<HttpMethod>;
-	url: Url;
-}
 
+export type Proxy<QryHdrsBdyParams extends Json, Ret extends ResponseDataType> = (args: QryHdrsBdyParams) => Promise<Ret>
+
+export type ProxyFactory<QryHdrsBdyParams extends Json, Ret extends ResponseDataType> = (
+	<A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) =>
+		(args: Omit<QryHdrsBdyParams, keyof A>) =>
+			Promise<Ret>
+)
+
+export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
+	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
+	proxy: Proxy<QryHdrsBdyParams, Ret>;
+	method: Lowercase<M>;
+	url: string;
+	route: (handlerFn: Proxy<QryHdrsBdyParams, Ret>) => express.Handler// RouteObject<HttpMethod, QryHdrsBdyParams, Ret>;
+}
 
 /** Parse various categories of properties out of a query arguments object 
  * By conention header property names must be prefixed with an underscore _
