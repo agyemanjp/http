@@ -33,10 +33,14 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 						}
 						return {
 							proxyFactory,
-							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => jsonHandler(handlerFn, true)
+							proxy: proxyFactory("", {}),
+							route: (handlerFn) => ({
+								method,
+								url,
+								handler: jsonHandler(handlerFn, true)
+							})
 						} as ProxyFactoryAugmented<Args, Ret, M>
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
@@ -54,7 +58,11 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => jsonHandler(handlerFn, true)
+							route: (handlerFn) => ({
+								method,
+								url,
+								handler: jsonHandler(handlerFn, true)
+							})
 						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
 					}
 				})
@@ -89,7 +97,11 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => jsonHandler(handlerFn, true)
+							route: (handlerFn) => ({
+								method,
+								url,
+								handler: jsonHandler(handlerFn, true)
+							})
 						} as ProxyFactoryAugmented<Args, Ret, M>
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
@@ -107,7 +119,11 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => jsonHandler(handlerFn, true)
+							route: (handlerFn) => ({
+								method,
+								url,
+								handler: jsonHandler(handlerFn, true)
+							})
 						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
 					}
 				})
@@ -138,40 +154,38 @@ export function jsonHandler<QryHdrsBdy, Ret>(fn: (req: QryHdrsBdy & RequestUrlIn
 }
 
 /** Creates a client route based on a server route */
-export function clientRoute<Mthd extends HttpMethod, QryHdrsBdyParams extends Json, Ret extends Json, A extends Partial<QryHdrsBdyParams>>(
-	route: RouteObject<Mthd, QryHdrsBdyParams, Ret>,
+export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Json, Ret extends Json, A extends Partial<QryHdrsBdyParams>>(
+	// route: RouteObject<Mthd, QryHdrsBdyParams, Ret>,
+	proxyFactoryAumented: ProxyFactoryAugmented<QryHdrsBdyParams, Ret, Mthd>,
 	baseUrl: string,
 	injectedArgs: A
-): RouteObject<Mthd, Omit<QryHdrsBdyParams, keyof A>, Ret> {
+): ProxyFactoryAugmented<Omit<QryHdrsBdyParams, keyof A>, Ret, Mthd> {
 
-	const proxy = route.proxyFactory(baseUrl, injectedArgs)
-
+	const proxy = proxyFactoryAumented.proxyFactory(baseUrl, injectedArgs)
 	return {
-		method: route.method,
-		url: applyParams(route.url, injectedArgs),
+		method: proxyFactoryAumented.method,
+		url: applyParams(proxyFactoryAumented.url, injectedArgs),
 		proxy,
 		proxyFactory: (baseUrlNew, argsNew) => {
 			const mergedArgs = { ...argsNew, ...injectedArgs } as Partial<QryHdrsBdyParams>
-			return route.proxyFactory(`${baseUrlNew}/${baseUrl}`, mergedArgs)
+			return proxyFactoryAumented.proxyFactory(`${baseUrlNew}/${baseUrl}`, mergedArgs)
 		},
-		handler: () => jsonHandler(proxy)
+		handler: jsonHandler(proxy)
 	}
 }
 
-export type RouteObject<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType> = {
+export type RouteObject<Mthd extends HttpMethod = HttpMethod> = {
 	url: string;
 	method: Lowercase<Mthd>;
 	handler: express.Handler;
-	proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
-	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
+	// proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
+	// proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
 	// <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
 }
-export type RouteTuple<Mthd extends HttpMethod = HttpMethod, QryHdrsBdyParams extends Json = Json, Ret extends ResponseDataType = ResponseDataType> = [
-	method: Lowercase<Mthd>,
+export type RouteTriple<Mthd extends HttpMethod = HttpMethod> = [
 	url: string,
+	method: Lowercase<Mthd>,
 	handler: express.Handler,
-	proxy: (args: QryHdrsBdyParams) => Promise<Ret>,
-	proxyFactory: <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>,
 ]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
@@ -189,13 +203,17 @@ export type ProxyFactory<QryHdrsBdyParams extends Json, Ret extends ResponseData
 			Promise<Ret>
 )
 
-export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
-	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
-	proxy: Proxy<QryHdrsBdyParams, Ret>;
-	method: Lowercase<M>;
-	url: string;
-	route: (handlerFn: Proxy<QryHdrsBdyParams, Ret>) => express.Handler// RouteObject<HttpMethod, QryHdrsBdyParams, Ret>;
-}
+export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = (
+	{
+		proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
+		proxy: Proxy<QryHdrsBdyParams, Ret>;
+		method: Lowercase<M>;
+		url: string;
+	} & (
+		{ route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>; } |
+		{ handler: express.Handler; }
+	)
+)
 
 /** Parse various categories of properties out of a query arguments object 
  * By conention header property names must be prefixed with an underscore _

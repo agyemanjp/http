@@ -5,7 +5,7 @@ import * as express from 'express'
 import { Obj } from '@agyemanjp/standard/utility'
 
 import { Json, Method } from './common'
-import { RouteObject, RouteTuple } from './route-proxy'
+import { RouteObject, RouteTriple } from './route-proxy'
 import { ResponseDataType } from './client'
 
 
