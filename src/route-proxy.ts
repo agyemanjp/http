@@ -168,15 +168,14 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 ) {
 
 	const proxy = proxyFactoryAumented.proxyFactory(baseUrl, injectedArgs)
-	const proxtFactoryAug: ProxyFactoryAugmented<Omit<QryHdrsBdyParams, keyof A>, Ret, Mthd> = {
+	const proxtFactoryAug = Object.assign(proxy, {
 		method: proxyFactoryAumented.method,
 		url: applyParams(proxyFactoryAumented.url, injectedArgs),
-		proxy,
-		proxyFactory: (baseUrlNew, argsNew) => {
+		proxyFactory: ((baseUrlNew, argsNew) => {
 			const mergedArgs = { ...argsNew, ...injectedArgs } as Partial<QryHdrsBdyParams>
 			return proxyFactoryAumented.proxyFactory(`${baseUrlNew}/${baseUrl}`, mergedArgs)
-		},
-	}
+		}) as ProxyFactory<Omit<QryHdrsBdyParams, keyof A>, Ret>,
+	}) //as ProxyFactoryAugmented<Omit<QryHdrsBdyParams, keyof A>, Ret, Mthd>
 
 	return Object.assign(proxtFactoryAug, {
 		handler: jsonHandler(proxy)
@@ -212,13 +211,14 @@ export type ProxyFactory<Args extends Json, Ret extends ResponseDataType> = (
 			Promise<Ret>
 )
 
-export type ProxyFactoryAugmented<Args extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
-	proxyFactory: ProxyFactory<Args, Ret>;
-	proxy: Proxy<Args, Ret>;
-	method: Lowercase<M>;
-	url: string;
-	// route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>;
-}
+export type ProxyFactoryAugmented<Args extends Json, Ret extends ResponseDataType, M extends HttpMethod> = (
+	Proxy<Args, Ret> & {
+		proxyFactory: ProxyFactory<Args, Ret>;
+		// proxy: Proxy<Args, Ret>;
+		method: Lowercase<M>;
+		url: string;
+		// route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>;
+	})
 
 
 // export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
