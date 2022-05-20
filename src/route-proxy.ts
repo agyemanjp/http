@@ -32,17 +32,21 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 									throw wrapped.error
 							})
 						}
-						return {
-							proxyFactory,
-							method,
-							url,
-							proxy: proxyFactory("", {}),
-							route: (handlerFn: Proxy<Args, Ret>) => ({
+						return Object.assign(
+							{
+								proxyFactory,
 								method,
 								url,
-								handler: jsonHandler(handlerFn, true)
-							})
-						} //as ProxyFactoryAugmented<Args, Ret, M>
+								proxy: proxyFactory("", {})
+							} as ProxyFactoryAugmented<Args, Ret, M>,
+							{
+								route: (handlerFn: Proxy<Args, Ret>) => ({
+									method,
+									url,
+									handler: jsonHandler(handlerFn, true)
+								})
+							}
+						)
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
@@ -98,17 +102,22 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 									throw wrapped.error
 							})
 						}
-						return {
-							proxyFactory,
-							proxy: proxyFactory("", {}),
-							method,
-							url,
-							route: (handlerFn: Proxy<Args, Ret>) => ({
+						return Object.assign(
+							{
+								proxyFactory,
+								proxy: proxyFactory("", {}),
 								method,
-								url,
-								handler: jsonHandler(handlerFn, true)
-							})
-						} as ProxyFactoryAugmented<Args, Ret, M>
+								url
+							} as ProxyFactoryAugmented<Args, Ret, M>,
+
+							{
+								route: (handlerFn: Proxy<Args, Ret>) => ({
+									method,
+									url,
+									handler: jsonHandler(handlerFn, true)
+								})
+							}
+						)
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
 						type Args = ParamsObj<Url> & Qry & Hdrs
@@ -120,17 +129,21 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 								accept
 							})
 						}
-						return {
-							proxyFactory,
-							proxy: proxyFactory("", {}),
-							method,
-							url,
-							route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
+						return Object.assign(
+							{
+								proxyFactory,
+								proxy: proxyFactory("", {}),
 								method,
-								url,
-								handler: jsonHandler(handlerFn, true)
-							})
-						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
+								url
+							} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>,
+							{
+								route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
+									method,
+									url,
+									handler: jsonHandler(handlerFn, true)
+								})
+							}
+						)
 					}
 				})
 			})
