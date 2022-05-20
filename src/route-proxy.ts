@@ -1,3 +1,4 @@
+/* eslint-disable fp/no-mutating-assign */
 /* eslint-disable indent */
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable fp/no-proxy */
@@ -36,12 +37,12 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 							method,
 							url,
 							proxy: proxyFactory("", {}),
-							route: (handlerFn) => ({
+							route: (handlerFn: Proxy<Args, Ret>) => ({
 								method,
 								url,
 								handler: jsonHandler(handlerFn, true)
 							})
-						} as ProxyFactoryAugmented<Args, Ret, M>
+						} //as ProxyFactoryAugmented<Args, Ret, M>
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
@@ -53,17 +54,22 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 								accept
 							})
 						}
-						return {
-							proxyFactory,
-							proxy: proxyFactory("", {}),
-							method,
-							url,
-							route: (handlerFn) => ({
+						return Object.assign(
+							{
+								proxyFactory,
+								proxy: proxyFactory("", {}),
 								method,
-								url,
-								handler: jsonHandler(handlerFn, true)
-							})
-						} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>
+								url
+							} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>,
+
+							{
+								route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
+									method,
+									url,
+									handler: jsonHandler(handlerFn, true)
+								})
+							}
+						)
 					}
 				})
 			})
@@ -97,7 +103,7 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => ({
+							route: (handlerFn: Proxy<Args, Ret>) => ({
 								method,
 								url,
 								handler: jsonHandler(handlerFn, true)
@@ -119,7 +125,7 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 							proxy: proxyFactory("", {}),
 							method,
 							url,
-							route: (handlerFn) => ({
+							route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
 								method,
 								url,
 								handler: jsonHandler(handlerFn, true)
@@ -159,10 +165,10 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 	proxyFactoryAumented: ProxyFactoryAugmented<QryHdrsBdyParams, Ret, Mthd>,
 	baseUrl: string,
 	injectedArgs: A
-): ProxyFactoryAugmented<Omit<QryHdrsBdyParams, keyof A>, Ret, Mthd> {
+) {
 
 	const proxy = proxyFactoryAumented.proxyFactory(baseUrl, injectedArgs)
-	return {
+	const proxtFactoryAug: ProxyFactoryAugmented<Omit<QryHdrsBdyParams, keyof A>, Ret, Mthd> = {
 		method: proxyFactoryAumented.method,
 		url: applyParams(proxyFactoryAumented.url, injectedArgs),
 		proxy,
@@ -170,8 +176,11 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 			const mergedArgs = { ...argsNew, ...injectedArgs } as Partial<QryHdrsBdyParams>
 			return proxyFactoryAumented.proxyFactory(`${baseUrlNew}/${baseUrl}`, mergedArgs)
 		},
-		handler: jsonHandler(proxy)
 	}
+
+	return Object.assign(proxtFactoryAug, {
+		handler: jsonHandler(proxy)
+	})
 }
 
 export type RouteObject<Mthd extends HttpMethod = HttpMethod> = {
@@ -203,17 +212,23 @@ export type ProxyFactory<QryHdrsBdyParams extends Json, Ret extends ResponseData
 			Promise<Ret>
 )
 
-export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = (
-	{
-		proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
-		proxy: Proxy<QryHdrsBdyParams, Ret>;
-		method: Lowercase<M>;
-		url: string;
-	} & (
-		{ route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>; } |
-		{ handler: express.Handler; }
-	)
-)
+export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
+	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
+	proxy: Proxy<QryHdrsBdyParams, Ret>;
+	method: Lowercase<M>;
+	url: string;
+	// route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>;
+}
+
+
+// export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
+// 	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
+// 	proxy: Proxy<QryHdrsBdyParams, Ret>;
+// 	method: Lowercase<M>;
+// 	url: string;
+// 	// route: express.Handler
+// }
+
 
 /** Parse various categories of properties out of a query arguments object 
  * By conention header property names must be prefixed with an underscore _
