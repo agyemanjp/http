@@ -32,20 +32,17 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 									throw wrapped.error
 							})
 						}
-						return Object.assign(
+						return Object.assign(proxyFactory("", {}),
 							{
-								proxyFactory,
 								method,
 								url,
-								proxy: proxyFactory("", {})
-							} as ProxyFactoryAugmented<Args, Ret, M>,
-							{
+								proxyFactory,
 								route: (handlerFn: Proxy<Args, Ret>) => ({
 									method,
 									url,
 									handler: jsonHandler(handlerFn, true)
 								})
-							}
+							} //as ProxyFactoryAugmented<Args, Ret, M>,
 						)
 					},
 					responseType: <Accept extends AcceptType>(accept: Accept) => {
@@ -58,15 +55,12 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 								accept
 							})
 						}
-						return Object.assign(
+						return Object.assign(proxyFactory("", {}),
 							{
 								proxyFactory,
-								proxy: proxyFactory("", {}),
+								// proxy: proxyFactory("", {}),
 								method,
-								url
-							} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>,
-
-							{
+								url,
 								route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
 									method,
 									url,
@@ -102,15 +96,11 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 									throw wrapped.error
 							})
 						}
-						return Object.assign(
+						return Object.assign(proxyFactory("", {}),
 							{
 								proxyFactory,
-								proxy: proxyFactory("", {}),
 								method,
-								url
-							} as ProxyFactoryAugmented<Args, Ret, M>,
-
-							{
+								url,
 								route: (handlerFn: Proxy<Args, Ret>) => ({
 									method,
 									url,
@@ -129,14 +119,11 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 								accept
 							})
 						}
-						return Object.assign(
+						return Object.assign(proxyFactory("", {}),
 							{
 								proxyFactory,
-								proxy: proxyFactory("", {}),
 								method,
-								url
-							} as ProxyFactoryAugmented<Args, TResponse<Accept>, M>,
-							{
+								url,
 								route: (handlerFn: Proxy<Args, TResponse<Accept>>) => ({
 									method,
 									url,
@@ -217,17 +204,17 @@ export type BodyProxy<Url extends string, Bdy extends Json, Hdrs extends sJson, 
 	(args: ParamsObj<Url> & Bdy & Hdrs) => Promise<Ret>
 )
 
-export type Proxy<QryHdrsBdyParams extends Json, Ret extends ResponseDataType> = (args: QryHdrsBdyParams) => Promise<Ret>
+export type Proxy<Args extends Json, Ret extends ResponseDataType> = (args: Args) => Promise<Ret>
 
-export type ProxyFactory<QryHdrsBdyParams extends Json, Ret extends ResponseDataType> = (
-	<A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) =>
-		(args: Omit<QryHdrsBdyParams, keyof A>) =>
+export type ProxyFactory<Args extends Json, Ret extends ResponseDataType> = (
+	<A extends Partial<Args>>(baseUrl: string, args: A) =>
+		(args: Omit<Args, keyof A>) =>
 			Promise<Ret>
 )
 
-export type ProxyFactoryAugmented<QryHdrsBdyParams extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
-	proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>;
-	proxy: Proxy<QryHdrsBdyParams, Ret>;
+export type ProxyFactoryAugmented<Args extends Json, Ret extends ResponseDataType, M extends HttpMethod> = {
+	proxyFactory: ProxyFactory<Args, Ret>;
+	proxy: Proxy<Args, Ret>;
 	method: Lowercase<M>;
 	url: string;
 	// route: (handler: Proxy<QryHdrsBdyParams, Ret>) => RouteObject<HttpMethod>;
