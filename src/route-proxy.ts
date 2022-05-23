@@ -274,7 +274,22 @@ type Wrap<T> = ({ data: T } | { error: string })
 // type MIMETypeKey = keyof typeof MIME_TYPES
 type sJson = JsonObject<string>
 
-export type Handler = (req: any, res: any) => any
+export type Handler = (req: any, res: any, ...args: any[]) => void
+
+/*export interface RequestHandler<
+	P = Obj<string>,
+	ResBody = any,
+	ReqBody = any,
+	ReqQuery = Obj<string>,
+	Locals extends Record<string, any> = Record<string, any>
+	> {
+	// tslint:disable-next-line callable-types (This is extended from and can't extend from a type alias in ts<2.2)
+	(
+		req: Request<P, ResBody, ReqBody, ReqQuery, Locals>,
+		res: Response<ResBody, Locals>,
+		next: NextFunction,
+	): void;
+}*/
 
 /*export const routeFactory = <QryBdy extends JsonObject<string>, Url extends string, Ret>(
 	proxyFactory: ProxyFactoryAugmented<QryBdy, Url, Promise<Ret>>,
