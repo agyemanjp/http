@@ -4,7 +4,7 @@
 /* eslint-disable fp/no-proxy */
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
-import * as express from 'express'
+// import * as express from 'express'
 import { keys, Obj, pick } from '@agyemanjp/standard'
 
 import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType, BodyMethod, QueryMethod } from "./common"
@@ -139,8 +139,25 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 }
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
-export function jsonHandler<QryHdrsBdy, Ret>(fn: (req: QryHdrsBdy & RequestUrlInfo) => Promise<Ret>, wrap = false): express.Handler {
-	return async (req, res) => {
+export function jsonHandler<QryHdrsBdy, Ret>(fn: (req: QryHdrsBdy & RequestUrlInfo) => Promise<Ret>, wrap = false)/*: express.Handler*/ {
+	return async (req:
+		{
+			body: QryHdrsBdy & RequestUrlInfo;
+			query: QryHdrsBdy & RequestUrlInfo;
+			headers: QryHdrsBdy & RequestUrlInfo;
+			params: QryHdrsBdy & RequestUrlInfo;
+			url: any;
+			baseUrl: any;
+			originalUrl: any
+		},
+		res:
+			{
+				status: (arg0: number) => {
+					(): any; new(): any;
+					json: { (arg0: Awaited<Ret> | { data: Awaited<Ret> }): void; new(): any };
+					send: { (arg0: unknown): void; new(): any }
+				}
+			}) => {
 		try {
 			const r = await fn({
 				...req.body,
@@ -185,7 +202,7 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 export type RouteObject<Mthd extends HttpMethod = HttpMethod> = {
 	url: string;
 	method: Lowercase<Mthd>;
-	handler: express.Handler;
+	handler: Handler //express.Handler;
 	// proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
 	// proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
 	// <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
@@ -193,7 +210,7 @@ export type RouteObject<Mthd extends HttpMethod = HttpMethod> = {
 export type RouteTriple<Mthd extends HttpMethod = HttpMethod> = [
 	url: string,
 	method: Lowercase<Mthd>,
-	handler: express.Handler,
+	handler: Handler,
 ]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
@@ -257,6 +274,7 @@ type Wrap<T> = ({ data: T } | { error: string })
 // type MIMETypeKey = keyof typeof MIME_TYPES
 type sJson = JsonObject<string>
 
+export type Handler = (req: any, res: any) => any
 
 /*export const routeFactory = <QryBdy extends JsonObject<string>, Url extends string, Ret>(
 	proxyFactory: ProxyFactoryAugmented<QryBdy, Url, Promise<Ret>>,

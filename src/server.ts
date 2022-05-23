@@ -4,9 +4,7 @@ import * as cuid from 'cuid'
 import * as express from 'express'
 import { Obj } from '@agyemanjp/standard/utility'
 
-import { Json, Method } from './common'
-import { RouteObject, RouteTriple } from './route-proxy'
-import { ResponseDataType } from './client'
+import { Handler, RouteObject, RouteTriple } from './route-proxy'
 
 
 /** Start express server */
@@ -68,7 +66,7 @@ type ServerArgs = {
 	routes: (
 		{ method: RouteObject["method"]; url: RouteObject["url"]; handler: RouteObject["handler"]; } |
 		[method: RouteObject["method"], url: RouteObject["url"], handler: RouteObject["handler"]] |
-		express.Handler
+		Handler
 	)[],
 	port: number | string,
 }
