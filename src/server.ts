@@ -16,7 +16,7 @@ export function startServer(args: ServerArgs) {
 		typeof route === "function"
 			? app.use(route)
 			: Array.isArray(route)
-				? app[route[0]](route[1], route[2])
+				? app[route[1]](route[0], route[2])
 				: app[route.method](route.url, route.handler)
 	)
 
@@ -64,8 +64,8 @@ export function startServer(args: ServerArgs) {
 type ServerArgs = {
 	name: string
 	routes: (
-		{ method: RouteObject["method"]; url: RouteObject["url"]; handler: RouteObject["handler"]; } |
-		[method: RouteObject["method"], url: RouteObject["url"], handler: RouteObject["handler"]] |
+		RouteObject |
+		RouteTriple |
 		Handler
 	)[],
 	port: number | string,

@@ -34,6 +34,7 @@
 			"./src/text",
 		],
 		"outDir": "./dist",
+		"sourceMap": true
 	},
 	"include": [
 		"./src",
