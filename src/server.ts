@@ -61,12 +61,12 @@ export function startServer(args: ServerArgs) {
 }
 
 
-type ServerArgs = {
+type ServerArgs<H extends Handler = Handler> = {
 	name: string
 	routes: (
 		RouteObject |
 		RouteTriple |
-		Handler
+		H
 	)[],
 	port: number | string,
 }

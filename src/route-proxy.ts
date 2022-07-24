@@ -199,18 +199,18 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 	})
 }
 
-export type RouteObject<Mthd extends HttpMethod = HttpMethod> = {
+export type RouteObject<Mthd extends HttpMethod = HttpMethod, H extends Handler = Handler> = {
 	url: string;
 	method: Lowercase<Mthd>;
-	handler: Handler //express.Handler;
+	handler: H //express.Handler;
 	// proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
 	// proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
 	// <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
 }
-export type RouteTriple<Mthd extends HttpMethod = HttpMethod> = [
+export type RouteTriple<Mthd extends HttpMethod = HttpMethod, H extends Handler = Handler> = [
 	url: string,
 	method: Lowercase<Mthd>,
-	handler: Handler,
+	handler: H,
 ]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
