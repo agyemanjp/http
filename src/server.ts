@@ -8,7 +8,7 @@ import { Handler, RouteObject, RouteTriple } from './route-proxy'
 
 
 /** Start express server */
-export function startServer(args: ServerArgs) {
+export function startServer<H extends Handler = Handler>(args: ServerArgs<H>) {
 	const app = express()
 
 	// Set up routes
