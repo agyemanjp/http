@@ -16,17 +16,17 @@ export function startServer<H extends Handler = Handler>(args: ServerArgs<H>) {
 	args.routes.forEach(route => {
 		if (typeof route === "function") {
 			app.use(route)
-			console.log(`Set up route "${route.name}" middleware`)
+			console.log(`Set up "${route.name}" middleware`)
 		}
 
 		else {
 			if (Array.isArray(route)) {
 				app[route[1]](route[0], route[2])
-				console.log(`Set up app route "${route[1]}" for "${route[0]}"`)
+				console.log(`Set up route "${route[1]}" for "${route[0]}"`)
 			}
 			else {
 				app[route.method](route.url, route.handler)
-				console.log(`Set up app route "${route.method}" for "${route.url}"`)
+				console.log(`Set up route "${route.method}" for "${route.url}"`)
 			}
 		}
 	})
