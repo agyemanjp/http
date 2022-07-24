@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-expressions */
 /* eslint-disable fp/no-unused-expression */
 import * as Net from 'net'
 import * as cuid from 'cuid'
@@ -12,13 +13,23 @@ export function startServer<H extends Handler = Handler>(args: ServerArgs<H>) {
 	const app = express()
 
 	// Set up routes
-	args.routes.forEach(route =>
-		typeof route === "function"
-			? app.use(route)
-			: Array.isArray(route)
-				? app[route[1]](route[0], route[2])
-				: app[route.method](route.url, route.handler)
-	)
+	args.routes.forEach(route => {
+		if (typeof route === "function") {
+			app.use(route)
+			console.log(`Set up route "${route.name}" middleware`)
+		}
+
+		else {
+			if (Array.isArray(route)) {
+				app[route[1]](route[0], route[2])
+				console.log(`Set up app route "${route[1]}" for "${route[0]}"`)
+			}
+			else {
+				app[route.method](route.url, route.handler)
+				console.log(`Set up app route "${route.method}" for "${route.url}"`)
+			}
+		}
+	})
 
 	const sockets: Obj<Net.Socket> = {}
 
