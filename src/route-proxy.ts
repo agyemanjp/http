@@ -1,3 +1,4 @@
+/* eslint-disable fp/no-rest-parameters */
 /* eslint-disable fp/no-mutating-assign */
 /* eslint-disable indent */
 /* eslint-disable @typescript-eslint/ban-types */
@@ -199,18 +200,15 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 	})
 }
 
-export type RouteObject<Mthd extends HttpMethod = HttpMethod, H extends Handler = Handler> = {
+export type RouteObject<Mthd extends string = string, Hndlr extends Handler = Handler> = {
+	method: Mthd;
 	url: string;
-	method: Lowercase<Mthd>;
-	handler: H //express.Handler;
-	// proxy: (args: QryHdrsBdyParams) => Promise<Ret>;
-	// proxyFactory: ProxyFactory<QryHdrsBdyParams, Ret>
-	// <A extends Partial<QryHdrsBdyParams>>(baseUrl: string, args: A) => (args: Omit<QryHdrsBdyParams, keyof A>) => Promise<Ret>;
+	handler: Hndlr;
 }
-export type RouteTriple<Mthd extends HttpMethod = HttpMethod, H extends Handler = Handler> = [
+export type RouteTriple<Mthd extends string = string, Hndlr extends Handler = Handler> = [
+	method: Mthd,
 	url: string,
-	method: Lowercase<Mthd>,
-	handler: H,
+	handler: Hndlr
 ]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
@@ -274,7 +272,7 @@ type Wrap<T> = ({ data: T } | { error: string })
 // type MIMETypeKey = keyof typeof MIME_TYPES
 type sJson = JsonObject<string>
 
-export type Handler = (req: any, res: any, ...args: any[]) => void
+export type Handler = (...args: any[]) => any | Promise<any>
 
 /*export interface RequestHandler<
 	P = Obj<string>,
