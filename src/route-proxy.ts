@@ -33,15 +33,18 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 									throw wrapped.error
 							})
 						}
+						type JSONHndlr = ReturnType<typeof jsonHandler>
+
+
 						return Object.assign(proxyFactory("", {}),
 							{
 								method,
 								url,
 								proxyFactory,
-								route: (handlerFn: Proxy<Args, Ret>) => ({
+								route: <H extends JSONHndlr = JSONHndlr>(handlerFn: Proxy<Args, Ret>) => ({
 									method,
 									url,
-									handler: jsonHandler(handlerFn, true)
+									handler: jsonHandler(handlerFn, true) as H
 								})
 							} //as ProxyFactoryAugmented<Args, Ret, M>,
 						)
