@@ -23,6 +23,9 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
 							const urlPrefix = isWhitespace(baseUrl) ? `` : `${baseUrl}/`
 							const urlEffective = applyParams(`${urlPrefix}${url}`, argsInjected)
+							console.log(`Base url of proxy: "${baseUrl}"`)
+							console.log(`Effective url requested from proxy: "${urlEffective}"`)
+
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 								url: urlEffective,
 								...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
