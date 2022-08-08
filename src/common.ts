@@ -2,15 +2,12 @@
 
 import { TypeAssert, entries, Obj, last, reduce } from '@agyemanjp/standard'
 
-/*function entries<O extends Obj>(obj: O) {
-	return Object.entries(obj) as Tuple<keyof O, O[keyof O]>[]
-}*/
 
 export function applyParams(urlWithParams: string, params: Obj): string {
 	return last(reduce(
 		entries(params), // data
 		urlWithParams as string, // initial
-		(url, [paramKey, paramVal]) => { // ToDo: Fix potential bug in with replacement below, use regex
+		(url, [paramKey, paramVal]) => { // ToDo: Fix potential bug in replacement below, use regex
 			return url.replace(`/:${paramKey}/`, String(paramVal)) // reducer
 		}
 	))

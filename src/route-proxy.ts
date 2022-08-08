@@ -21,7 +21,8 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 					returnType: <Ret extends Json | null>() => {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
 						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
-							const urlEffective = applyParams(`${baseUrl}/${url}`, argsInjected)
+							const urlPrefix = baseUrl ? `${baseUrl}/` : ``
+							const urlEffective = applyParams(`${urlPrefix}${url}`, argsInjected)
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 								url: urlEffective,
 								...parseBodyArgs(urlEffective, { ...args, ...argsInjected }),
@@ -140,7 +141,7 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 }
 
 /** Create handler accepting typed JSON data (in query, params, header, and/or body) and returning JSON data */
-export function jsonHandler<QryHdrsBdy, Ret>(fn: (req: QryHdrsBdy & RequestUrlInfo) => Promise<Ret>, wrap = false)/*: express.Handler*/ {
+export function jsonHandler<QryHdrsBdy, Ret>(fn: (req: QryHdrsBdy & RequestUrlInfo) => Promise<Ret>, wrap = false) {
 	return async (req:
 		{
 			body: QryHdrsBdy & RequestUrlInfo;
@@ -200,16 +201,6 @@ export function clientProxy<Mthd extends HttpMethod, QryHdrsBdyParams extends Js
 	})
 }
 
-export type RouteObject<Mthd extends string = string, Hndlr extends Handler = Handler> = {
-	method: Mthd;
-	url: string;
-	handler: Hndlr;
-}
-export type RouteTriple<Mthd extends string = string, Hndlr extends Handler = Handler> = [
-	method: Mthd,
-	url: string,
-	handler: Hndlr
-]
 
 export type QueryProxy<Url extends string, Qry extends sJson, Hdrs extends sJson, Ret extends ResponseDataType> = (
 	(args: ParamsObj<Url> & Qry & Hdrs) => Promise<Ret>
@@ -272,7 +263,7 @@ type Wrap<T> = ({ data: T } | { error: string })
 // type MIMETypeKey = keyof typeof MIME_TYPES
 type sJson = JsonObject<string>
 
-export type Handler = (...args: any[]) => any | Promise<any>
+// export type Handler = (...args: any[]) => any | Promise<any>
 
 /*export interface RequestHandler<
 	P = Obj<string>,
