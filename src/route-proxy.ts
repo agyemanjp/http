@@ -31,8 +31,6 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
 						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
 							const urlEffective = applyParams(pathJoin(baseUrl, url), argsInjected)
-							console.log(`Base url of proxy: "${baseUrl}"`)
-							console.log(`Effective url requested from proxy: "${urlEffective}"`)
 
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 								url: urlEffective,
@@ -62,8 +60,6 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
 						const proxyFactory: ProxyFactory<Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
 							const urlEffective = applyParams(pathJoin(baseUrl, url), argsInjected)
-							console.log(`Base url of proxy: "${baseUrl}"`)
-							console.log(`Effective url requested from proxy: "${urlEffective}"`)
 
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
 								url: urlEffective,
@@ -101,8 +97,6 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 						type Args = ParamsObj<Url> & Qry & Hdrs
 						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
 							const urlEffective = applyParams(pathJoin(baseUrl, url), argsInjected)
-							console.log(`Base url of proxy: "${baseUrl}"`)
-							console.log(`Effective url requested from proxy: "${urlEffective}"`)
 
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 								url: urlEffective,
@@ -132,8 +126,6 @@ export function queryFactory<M extends QueryMethod>(method: Lowercase<M>) {
 						type Args = ParamsObj<Url> & Qry & Hdrs
 						const proxyFactory: ProxyFactory<Args, TResponse<Accept>> = (baseUrl, argsInjected) => {
 							const urlEffective = applyParams(pathJoin(baseUrl, url), argsInjected)
-							console.log(`Base url of proxy: "${baseUrl}"`)
-							console.log(`Effective url requested from proxy: "${urlEffective}"`)
 
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]({
 								url: urlEffective,
