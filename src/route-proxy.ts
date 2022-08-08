@@ -6,7 +6,7 @@
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
 // import * as express from 'express'
-import { keys, Obj, pick } from '@agyemanjp/standard'
+import { keys, Obj, pick, isWhitespace } from '@agyemanjp/standard'
 
 import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType, BodyMethod, QueryMethod } from "./common"
 import { request, TResponse, ResponseDataType } from './client'
@@ -21,7 +21,7 @@ export function bodyFactory<M extends BodyMethod>(method: Lowercase<M>) {
 					returnType: <Ret extends Json | null>() => {
 						type Args = ParamsObj<Url> & Bdy & Hdrs
 						const proxyFactory: ProxyFactory<Args, Ret> = (baseUrl, argsInjected) => {
-							const urlPrefix = baseUrl ? `${baseUrl}/` : ``
+							const urlPrefix = isWhitespace(baseUrl) ? `` : `${baseUrl}/`
 							const urlEffective = applyParams(`${urlPrefix}${url}`, argsInjected)
 							return async (args: Omit<Args, keyof typeof argsInjected>) => request[method]<Wrap<Ret>>({
 								url: urlEffective,
