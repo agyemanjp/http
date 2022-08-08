@@ -6,7 +6,7 @@
 /* eslint-disable fp/no-unused-expression */
 /* eslint-disable no-shadow */
 // import * as express from 'express'
-import { keys, Obj, pick, isWhitespace } from '@agyemanjp/standard'
+import { keys, Obj, pick, isWhitespace, trimRight, trimLeft } from '@agyemanjp/standard'
 
 import { JsonObject, statusCodes, Method as HttpMethod, applyParams, ParamsObj, Json, AcceptType, BodyMethod, QueryMethod } from "./common"
 import { request, TResponse, ResponseDataType } from './client'
@@ -17,7 +17,8 @@ function pathJoin(a: string, b: string) {
 		return b
 	else if (isWhitespace(b))
 		return a
-	else return (a + b).split("/").filter(token => token !== "").join("/")
+	else
+		return trimRight(a, "/") + "/" + trimLeft(b, "/")
 }
 
 /** Fluent body route factory */
