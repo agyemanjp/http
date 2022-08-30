@@ -3,6 +3,9 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
+import Blob from "cross-blob"
+import * as FormData from "cross-formdata"
+
 import { trimRight } from "@agyemanjp/standard"
 import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject, AcceptType } from "./common"
 
@@ -50,13 +53,23 @@ export function any(args: RequestArgs) {
 async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TResponse<R["accept"]>> {
 	const queryParams = "query" in args ? `?${new URLSearchParams(args.query).toString()}` : ""
 	const urlEffective = applyParams(`${trimRight(args.url, "/")}${queryParams}`, args.params ?? {}) as string
+
+	function isReadableStream(x: any): x is ReadableStream {
+		return "pipeThrough" in x &&
+			"pipeTo" in x &&
+			"getReader" in x &&
+			"locked" in x &&
+			"tee" in x &&
+			"cancel" in x
+	}
+
 	const contentType: AcceptType | undefined = (("body" in args && args.body !== null)
 		? (() => {
 			switch (true) {
 				case typeof args.body === "string": return "Text"
 				case args.body instanceof FormData: return "Multi"
 				case args.body instanceof URLSearchParams: return "Url"
-				case args.body instanceof ReadableStream: return "Octet"
+				case isReadableStream(args.body): return "Octet"
 				case args.body instanceof ArrayBuffer: return "Binary"
 				case args.body instanceof Blob: return "Binary"
 				case typeof args.body === "object": return "Json"
