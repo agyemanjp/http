@@ -3,10 +3,9 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import { default as Blob } from "cross-blob"
 import * as FormData from "cross-formdata"
 
-import { trimRight } from "@agyemanjp/standard"
+import { trimRight, isBlob } from "@agyemanjp/standard"
 import { applyParams, MIME_TYPES, JsonArray, BodyType, Json, JsonObject, AcceptType } from "./common"
 
 export const request = { any: any, get, put, post, patch, delete: del }
@@ -71,7 +70,7 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 				case args.body instanceof URLSearchParams: return "Url"
 				case isReadableStream(args.body): return "Octet"
 				case args.body instanceof ArrayBuffer: return "Binary"
-				case args.body instanceof Blob: return "Binary"
+				case isBlob(args.body): return "Binary"
 				case typeof args.body === "object": return "Json"
 			}
 		})()
