@@ -3,7 +3,7 @@
 /* eslint-disable no-shadow */
 /* eslint-disable indent */
 import { fetch } from "cross-fetch"
-import Blob from "cross-blob"
+import { default as Blob } from "cross-blob"
 import * as FormData from "cross-formdata"
 
 import { trimRight } from "@agyemanjp/standard"
