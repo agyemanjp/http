@@ -82,9 +82,9 @@ async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<TRespon
 				case typeof args.body === "string":
 				case args.body instanceof FormData:
 				case args.body instanceof URLSearchParams:
-				case args.body instanceof ReadableStream:
+				case isReadableStream(args.body):
 				case args.body instanceof ArrayBuffer:
-				case args.body instanceof Blob: return args.body as BodyInit
+				case isBlob(args.body): return args.body as BodyInit
 				case typeof args.body === "object": return JSON.stringify(args.body)
 			}
 		})()
