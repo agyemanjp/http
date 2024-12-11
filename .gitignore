@@ -1,14 +1,12 @@
-# package-lock.json
-
 dist/
 dist
 node_modules
 
+*.tsbuildinfo
 *.log
 *-report.json
 *.run.json
 tslint.json
-*.tsbuildinfo
 
 .vs
 .vscode
