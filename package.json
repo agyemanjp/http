@@ -1,6 +1,6 @@
 {
 	"name": "@agyemanjp/http",
-	"version": "1.0.11",
+	"version": "2.0.0",
 	"description": "Http communication, routing, and proxying library based on request API",
 	"type": "module",
 	"sideEffects": false,
