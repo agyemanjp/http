@@ -1,17 +1,234 @@
-/* eslint-disable @typescript-eslint/ban-types */
+import { err, isBlob, ok, stringify, trimRight, values, type Rec, type Result, type StdError, type TypeAssert } from "@agyemanjp/standard"
 
-import { TypeAssert, entries, Obj, last, reduce } from '@agyemanjp/standard'
+export const request = { any: any, get, put, post, patch, delete: del }
 
-
-export function applyParams(urlWithParams: string, params: Obj): string {
-	return last(reduce(
-		entries(params), // data
-		urlWithParams as string, // initial
-		(url, [paramKey, paramVal]) => { // ToDo: Fix potential bug in replacement below, use regex
-			return url.replace(`/:${paramKey}/`, String(paramVal)) // reducer
-		}
-	))
+export function post<A extends AcceptType = AcceptType>(args: Specific<RequestPOST, A>): Promise<Result<TResponse<A>, RequestError>>
+export function post<Ret extends Json = Json>(args: Specific<RequestPOST, "Json">): Promise<Result<Ret, RequestError>>
+export function post(args: Specific<RequestPOST>) {
+	return __({ ...args, method: "POST" })
 }
+// const p = post<{ arr: any[] }>({ url: "", body: { a: "" }, accept: "Json" }).then(y => y)
+
+export function put<A extends AcceptType = AcceptType>(args: Specific<RequestPUT, A>): Promise<Result<TResponse<A>, RequestError>>
+export function put<Ret extends Json = Json>(args: Specific<RequestPUT, "Json">): Promise<Result<Ret, RequestError>>
+export function put(args: Specific<RequestPUT>) {
+	return __({ ...args, method: "PUT" })
+}
+
+export function patch<A extends AcceptType = AcceptType>(args: Specific<RequestPATCH, A>): Promise<Result<TResponse<A>, RequestError>>
+export function patch<Ret extends Json = Json>(args: Specific<RequestPATCH, "Json">): Promise<Result<Ret, RequestError>>
+export function patch(args: Specific<RequestPATCH>) {
+	return __({ ...args, method: "PATCH" })
+}
+
+export function del<A extends AcceptType = AcceptType>(args: Specific<RequestDELETE, A>): Promise<Result<TResponse<A>, RequestError>>
+export function del<Ret extends Json = Json>(args: Specific<RequestDELETE, "Json">): Promise<Result<Ret, RequestError>>
+export function del(args: Specific<RequestDELETE>) {
+	return __({ ...args, method: "DELETE" })
+}
+
+export function get<A extends AcceptType = AcceptType>(args: Specific<RequestGET, A>): Promise<Result<TResponse<A>, RequestError>>
+export function get<Ret extends Json = Json>(args: Specific<RequestGET, "Json">): Promise<Result<Ret, RequestError>>
+export function get(args: Specific<RequestGET>) {
+	return __({ ...args, method: "GET" })
+}
+// const got = get<{ arr: Array<number> }>({ url: "/foo/:app/bar", params: { x: "" }, accept: "Json" })
+
+export function any<A extends AcceptType = AcceptType>(args: RequestArgs & { accept: A }): Promise<Result<TResponse<A>, RequestError>>
+export function any<Ret extends Json = Json>(args: RequestArgs & { accept: "Json" }): Promise<Result<Ret, RequestError>>
+export function any(args: RequestArgs) {
+	return __(args)
+}
+// const r = req<{ num: number, str: string }>({ url: "", body: {}, accept: "Json", method: "POST" }).then(x => x)
+
+/** Make http request using fetch (native or cross-platform) */
+async function __<R extends RequestArgs = RequestArgs>(args: R): Promise<Result<TResponse<R["accept"]>, RequestError>> {
+	const queryString = "query" in args ? `${new URLSearchParams(args.query).toString()}` : ""
+	const urlEffective = `${trimRight(args.url, "/")}${queryString.length ? `?${queryString}` : ``}`
+
+	const reqArgs: Result<RequestInit, RequestError> = (() => {
+		try {
+			const requestContentType: AcceptType | undefined = (("body" in args && args.body !== null)
+				? (() => {
+					switch (true) {
+						case typeof args.body === "string": return "Text"
+						case isFormData(args.body): return "Multi"
+						case args.body instanceof URLSearchParams: return "Url"
+						case isReadableStream(args.body): return "Octet"
+						case args.body instanceof ArrayBuffer: return "Binary"
+						case isBlob(args.body): return "Binary"
+						case typeof args.body === "object": return "Json"
+					}
+				})()
+				: undefined
+			)
+			const body = (("body" in args && args.body !== null)
+				? (() => {
+					switch (true) {
+						case typeof args.body === "string":
+						case isFormData(args.body):
+						case isReadableStream(args.body):
+						case args.body instanceof URLSearchParams:
+						case args.body instanceof ArrayBuffer:
+						case isBlob(args.body):
+							return args.body //as Bun.BodyInit
+
+						case typeof args.body === "object":
+							return JSON.stringify(args.body)
+					}
+				})()
+
+				: undefined
+			)
+			return ok({
+				method: args.method,
+				body,
+				headers: {
+					...args.headers,
+					...args.accept ? { 'Accept': MIME_TYPES[args.accept] } : {},
+					...requestContentType ? { 'Content-Type': MIME_TYPES[requestContentType] } : {}
+				}
+			})
+		}
+		catch (e) {
+			return err<any, RequestError>({ code: "request-uncontructable" })
+		}
+	})()
+
+	// console.log(`Calling fetch (from http lib) to ${urlEffective} with args ${stringify(reqArgs)}`)
+	if (reqArgs.isErr()) return err(reqArgs.error)
+
+	const response = await (async () => {
+		try { return await fetch(urlEffective, reqArgs.value) }
+		catch (e) { return e instanceof Error ? e : new Error(String(e)) }
+	})()
+
+	if (response instanceof Error) return err({
+		code: "request-failure",
+		description: response.message
+	}) satisfies Result<TResponse<R["accept"]>, RequestError>
+
+	if (!response.ok) return err({
+		code: "server-error",
+		details: {
+			statusCode: response.status as StatusCode,
+			statusText: response.statusText,
+			description: await response.text()
+		}
+	}) satisfies Result<TResponse<R["accept"]>, RequestError>
+
+	const responseContentType = response.headers ? response.headers.get("content-type")?.split(";")[0] : undefined
+	if (responseContentType) console.assert(values(MIME_TYPES).includes(responseContentType as MIMETypeString))
+	// console.warn(`Content type of response from "${args.url}": "${responseContentType}"`)
+	// console.log(`values(MIME_TYPES): "${values(MIME_TYPES)}"`)
+
+	try {
+		switch (responseContentType) {
+			case "application/octet-stream": return ok(await response.arrayBuffer() as TResponse<R["accept"]>)
+			case "application/binary": return ok(await response.blob() as TResponse<R["accept"]>)
+			case "application/json": {
+				const json = await response.json()
+				// console.log(`Returning JSON value from client request of "${urlEffective}": ${stringify(json)}`)
+				return ok(json as TResponse<R["accept"]>)
+			}
+			case "text/html":
+			case "text/plain": return ok(await response.text() as TResponse<R["accept"]>)
+			default: return ok(response.body as TResponse<R["accept"]>)
+		}
+	}
+	catch (e) {
+		return err({
+			code: "reponse-unparseable",
+			description: e instanceof Error ? e.message : String(e)
+		})
+	}
+}
+
+function isReadableStream(x: any): x is ReadableStream {
+	return "pipeThrough" in x &&
+		"pipeTo" in x &&
+		"getReader" in x &&
+		"locked" in x &&
+		"tee" in x &&
+		"cancel" in x
+}
+function isFormData(x: any): x is FormData {
+	return "append" in x &&
+		"delete" in x &&
+		"entries" in x &&
+		"forEach" in x &&
+		"get" in x &&
+		"getAll" in x &&
+		"getAll" in x &&
+		"has" in x &&
+		"keys" in x &&
+		"set" in x &&
+		"values" in x
+}
+
+export type RequestBase = /*Omit<RequestInit, "method"> &*/ {
+	/** Request URL; Should contain no params placeholders */
+	url: string
+
+	/** Desired response format */
+	accept?: keyof typeof MIME_TYPES | void
+
+	/** Request headers, as a record */
+	headers?: sObj
+}
+export type RequestGET<Q extends sObj = sObj> = RequestBase & {
+	method: "GET"
+	query?: Q
+	// params?: P;
+	// body:void
+}
+export type RequestDELETE<Q extends sObj = sObj> = RequestBase & {
+	method: "DELETE"
+	query: Q
+	// params?: P;
+}
+export type RequestPUT<B extends BodyType = BodyType> = RequestBase & {
+	method: "PUT"
+	// params?: P;
+	body: B
+}
+export type RequestPATCH<B extends BodyType = BodyType> = RequestBase & {
+	method: "PATCH"
+	// params?: P;
+	body: B
+}
+export type RequestPOST<B extends BodyType = BodyType> = RequestBase & {
+	method: "POST"
+	// params?: P,
+	body: B
+}
+
+export type RequestArgs<Bdy extends BodyType = BodyType, Qry extends sObj = sObj> = (
+	RequestGET<Qry> |
+	RequestDELETE<Qry> |
+	RequestPOST<Bdy> |
+	RequestPUT<Bdy> |
+	RequestPATCH<Bdy>
+)
+
+export type TResponse<A extends AcceptType> = (
+	A extends void ? void :
+	A extends "Json" ? Json :
+	A extends "Text" ? string :
+	A extends "Octet" ? Blob :
+	A extends "Binary" ? ArrayBuffer :
+	ReadableStream<Uint8Array> /*| null*/
+)
+
+export type ResponseDataType = void | null | Json | string | Blob | ArrayBuffer | ReadableStream<Uint8Array>
+
+
+/** HTTP methods */
+export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT"
+
+export type IdempotentMethod = "GET" | "DELETE" | "PATCH" | "PUT"
+export type BodyMethod = "POST" | "PATCH" | "PUT"
+export type QueryMethod = "GET" | "DELETE"
 
 /** MIME content types */
 export const MIME_TYPES = Object.freeze({
@@ -21,7 +238,8 @@ export const MIME_TYPES = Object.freeze({
 	Related: "multipart/related",
 	Octet: "application/octet-stream",
 	Binary: "application/binary",
-	Text: "text/plain"
+	Text: "text/plain",
+	Html: "text/html"
 } as const)
 export type MIMETypeString = (typeof MIME_TYPES)[keyof typeof MIME_TYPES]
 
@@ -340,12 +558,74 @@ export const statusCodes = Object.freeze({
 	 */
 	NETWORK_AUTHENTICATION_REQUIRED: 511
 })
+export type StatusCode = (typeof statusCodes)[keyof typeof statusCodes]
 
-/** HTTP methods */
-export type Method = "GET" | "POST" | "DELETE" | "PATCH" | "PUT";
-export type IdempotentMethod = "GET" | "DELETE" | "PATCH" | "PUT";
-export type BodyMethod = "POST" | "PATCH" | "PUT";
-export type QueryMethod = "GET" | "DELETE";
+export function createStdError(err: RequestError): StdError {
+	switch (err.code) {
+		case "request-failure": return {
+			errCode: "no-connection",
+			description: err.details?.reason
+		}
+		case "request-uncontructable": return {
+			errCode: "bad-input",
+			description: err.details?.reason
+		}
+		case "server-error": return {
+			errCode: httpToStdErrorCodeMap[err.details.statusCode] ?? "internal",
+			description: err.details.description
+		} as StdError
+		case "reponse-unparseable": return {
+			errCode: "internal",
+			description: err.details?.reason
+		}
+		case "general": return {
+			errCode: "general",
+			description: err.details?.reason
+		}
+	}
+}
+export type RequestError = (
+	| { code: "server-error"; details: { statusCode: StatusCode; statusText?: string; description: string } }
+	| { code: "request-failure"; details?: { reason?: string } }
+	| { code: "request-uncontructable"; details?: { reason?: string } }
+	| { code: "reponse-unparseable"; details?: { reason?: string } }
+	| { code: "general"; details?: { reason?: string } }
+)
+export const stdErrorToHttpCodeMap: Rec<StatusCode, StdError["errCode"]> = {
+	"conflict": statusCodes.CONFLICT,
+	"not-implemented": statusCodes.NOT_IMPLEMENTED,
+	"bad-input": statusCodes.UNPROCESSABLE_ENTITY,
+	"malformed-input": statusCodes.BAD_REQUEST,
+	"access-denied": statusCodes.UNAUTHORIZED,
+	"no-connection": statusCodes.INTERNAL_SERVER_ERROR,
+	"not-found": statusCodes.NOT_FOUND,
+	"time-out": statusCodes.REQUEST_TIMEOUT,
+	"resources-exhausted": statusCodes.INTERNAL_SERVER_ERROR,
+	"internal": statusCodes.INTERNAL_SERVER_ERROR,
+	"general": statusCodes.INTERNAL_SERVER_ERROR,
+	"runtime": statusCodes.INTERNAL_SERVER_ERROR
+}
+export const httpToStdErrorCodeMap: Partial<Record<StatusCode, StdError["errCode"]>> = {
+	[statusCodes.NOT_FOUND]: "not-found",
+	[statusCodes.NOT_IMPLEMENTED]: "not-implemented",
+
+	[statusCodes.CONFLICT]: "conflict",
+	[statusCodes.BAD_REQUEST]: "bad-input",
+	[statusCodes.UNPROCESSABLE_ENTITY]: "bad-input",
+
+	[statusCodes.UNAUTHORIZED]: "access-denied",
+	[statusCodes.FORBIDDEN]: "access-denied",
+
+	[statusCodes.REQUEST_TIMEOUT]: "time-out",
+	[statusCodes.GATEWAY_TIMEOUT]: "time-out",
+
+	[statusCodes.INSUFFICIENT_STORAGE]: "resources-exhausted",
+
+	[statusCodes.HTTP_VERSION_NOT_SUPPORTED]: "general",
+	[statusCodes.INTERNAL_SERVER_ERROR]: "internal"
+}
+
+export type AcceptType = void | keyof typeof MIME_TYPES
 
 export type BodyType = Json | string | Blob | FormData | URLSearchParams | /*ArrayBufferView |*/ ArrayBuffer | ReadableStream
 
@@ -355,27 +635,12 @@ export type JsonArray = Array<JsonValue>
 export type JsonValue = null | string | number | boolean | Date | JsonObject | JsonArray
 export type ObjEmpty = { [k in never]: never }
 
-/** Extract object type containing all param args embedded in a URL pattern */
-export type ParamsObj<Url extends string> = (
-	string extends Url
-	? Obj<string>
-	: Url extends `${infer Start}:${infer Param}/${infer Rest}`
-	? { [k in Param | keyof ParamsObj<Rest>]: string }
-	: Url extends `${infer Start}:${infer Param}`
-	? { [k in Param]: string }
-	: ObjEmpty
-)
-
-export type AcceptType = void | keyof typeof MIME_TYPES
-
-// eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars
-const test_extract_route_params: TypeAssert<ParamsObj<"auth.com/:cat/api/:app/verify">, { cat: string, app: string }> = "true"
-// type TTT = ExtractParams<"auth.com/:cat/api/:app/verify"
-
+type Specific<R extends RequestArgs = RequestArgs, A extends AcceptType = AcceptType> = Omit<R, "method"> & { accept: A }
+type sObj = JsonObject<string>
 
 // type JsonArray = Array<string | number | boolean | Date | Json | JsonArray>
 // export interface Json { [x: string]: string | number | boolean | Date | Json | JsonArray }
-// export interface EncodedUrlData { type: "url", body: Obj<string> }
+// export interface EncodedUrlData { type: "url", body: RecordX<string> }
 // export interface JSONData { type: "json", body: Json }
 // export interface TextData { type: "text", body: string }
 // export interface RawData { type: "raw", body: Uint8Array[] }
@@ -384,7 +649,7 @@ const test_extract_route_params: TypeAssert<ParamsObj<"auth.com/:cat/api/:app/ve
 // export interface BufferData { type: "buffer", body: Buffer }
 // export type BasicRequestData = EncodedUrlData | JSONData | RawData | StreamData | BufferData | FileData | TextData
 
-// export interface MultiPartFormData { type: "multi", body: Obj<unknown> }
+// export interface MultiPartFormData { type: "multi", body: RecordX<unknown> }
 // export interface MultiPartRelatedData { type: "related", body: BasicRequestData[] }
 // export interface ChunkedMultiPartRelatedData { chunked: true, type: "multi-related-chunked", body: RawData[] }
 
@@ -392,7 +657,7 @@ const test_extract_route_params: TypeAssert<ParamsObj<"auth.com/:cat/api/:app/ve
 
 
 /** Generate query string from query object */
-// function getQueryString<T extends Obj<string> = Obj<string>>(obj?: T, excludedValues: unknown[] = [undefined, null]) {
+// function getQueryString<T extends RecordX<string> = RecordX<string>>(obj?: T, excludedValues: unknown[] = [undefined, null]) {
 // 	if (!obj)
 // 		return ""
 // 	return Object.keys(obj)

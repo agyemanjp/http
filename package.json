@@ -2,71 +2,59 @@
 	"name": "@agyemanjp/http",
 	"version": "1.0.11",
 	"description": "Http communication, routing, and proxying library based on request API",
+	"type": "module",
+	"sideEffects": false,
 	"main": "index.js",
 	"types": "index.d.ts",
 	"files": [
-		"/*",
-		"!*.tsbuildinfo"
+		"/*"
 	],
+	"homepage": "https://github.com/agyemanjp/http.js#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/agyemanjp/http.js.git"
+		"url": "git+https://github.com/agyemanjp/storage.js.git"
+	},
+	"bugs": {
+		"url": "https://github.com/agyemanjp/http.js/issues"
 	},
 	"keywords": [
 		"HTTP",
 		"Request",
-		"Proxy",
-		"Endpoint",
-		"Express",
-		"Route"
+		"TypeScript"
 	],
-	"author": "",
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/agyemanjp/http.js/issues"
+	"author": {
+		"name": "James Prempeh",
+		"email": "agyemanjp@danfortsystems.com"
 	},
-	"homepage": "https://github.com/agyemanjp/http.js#readme",
+	"license": "MIT",
 	"dependencies": {
-		"@agyemanjp/standard": "^4.0.3",
-		"cross-blob": "^3.0.1",
-		"cross-fetch": "^3.1.5",
-		"cross-formdata": "^1.0.3",
-		"cuid": "^2.1.8"
+		"@agyemanjp/standard": "6.0.1",
+		"cross-blob": "3.0.1",
+		"cross-fetch": "3.1.5",
+		"cross-formdata": "1.0.3"
 	},
 	"devDependencies": {
-		"@types/assert": "^1.5.1",
-		"@types/express": "^4.17.13",
-		"@types/mocha": "^7.0.2",
-		"@types/node": "^14.0.4",
-		"@types/source-map-support": "^0.5.1",
-		"@typescript-eslint/eslint-plugin": "^4.26.0",
-		"@typescript-eslint/parser": "^4.26.0",
-		"eslint": "^7.28.0",
-		"eslint-formatter-json-standard": "^1.0.0",
-		"eslint-plugin-fp": "^2.3.0",
-		"mocha": "^8.4.0",
-		"mocha-reporter-json-standard": "^1.0.0",
-		"npm-run-all": "^4.1.5",
-		"source-map-support": "^0.5.19",
-		"ts-node": "^9.0.0",
-		"typescript": "^4.5.5"
+		"@biomejs/biome": "1.9.4",
+		"@types/bun": "1.1.14",
+		"@types/express": "4.17.13",
+		"@types/source-map-support": "0.5.1",
+		"npm-run-all": "4.1.5",
+		"source-map-support": "0.5.19",
+		"typescript": "5.5.4"
 	},
 	"scripts": {
-		"deps": "rm -rf ./node_modules package-lock.json && npm install",
-		"clean": "rm -rf dist/* .eslintcache *-report.json",
-		"lint": "eslint --ext ts --cache 'src/**'",
-		"lintci": "eslint --ext ts --output-file .lint.run.json --format json-standard --cache 'src/**'",
-		"compile": "tsc",
-		"test": "mocha --require ts-node/register test/*.test.*",
-		"testci": "mocha --require ts-node/register test/*.test.* --reporter mocha-reporter-json-standard >| .test.run.json",
-		"build": "run-s clean lint compile test",
-		"pubstage": "cp package.json LICENSE README.md dist",
-		"package": "npm run pubstage && cd dist && npm publish --dry-run && cd ..",
-		"version:patch": "npm version patch && git push --follow-tags",
-		"version:minor": "npm version minor && git push --follow-tags",
-		"version:major": "npm version major && git push --follow-tags",
-		"publish:patch": "run-s build version:patch pubstage && cd dist && npm publish --access public && cd ..",
-		"publish:minor": "run-s build version:minor pubstage && cd dist && npm publish --access public && cd ..",
-		"publish:major": "run-s build version:major pubstage && cd dist && npm publish --access public && cd .."
+		"deps": "rm -rf ./node_modules bun.lockb && bun install",
+		"clean": "rm -rf dist tmp tsconfig.tsbuildinfo",
+		"typecheck": "tsc --noEmit",
+		"compile": "tsc --outDir tmp && mkdir -p dist && cp -r tmp/source/* dist && rm -rf tmp",
+		"test": "bun test",
+		"ver:patch": "npm version patch && git push --follow-tags",
+		"ver:minor": "npm version minor && git push --follow-tags",
+		"ver:major": "npm version major && git push --follow-tags",
+		"publish:stage": "cp package.json LICENSE README.md dist",
+		"publish:preview": "bun publish:stage && cd dist && bun publish --dry-run && cd ..",
+		"publish:patch": "run-s clean compile ver:patch publish:stage && cd dist && bun publish --access public && cd ..",
+		"publish:minor": "run-s clean compile ver:minor publish:stage && cd dist && bun publish --access public && cd ..",
+		"publish:major": "run-s clean compile ver:major publish:stage && cd dist && bun publish --access public && cd .."
 	}
 }
